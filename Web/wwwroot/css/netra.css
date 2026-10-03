@@ -1,0 +1,4100 @@
+/* ==========================================================================
+   NETRA design system
+   Visual reference: NETRA Figma export (netra.pdf)
+   Deep navy security/intelligence dashboard. Server-rendered, CSS only.
+   ========================================================================== */
+
+:root {
+    /* Core surfaces */
+    --netra-background: #081326;
+    --netra-surface: #101b2e;
+    --netra-surface-elevated: #1b2639;
+    --netra-surface-sunken: #0a1424;
+    --netra-border: #1e2c42;
+    --netra-border-strong: #2a3a55;
+
+    /* Accent */
+    --netra-primary: #6de2fa;
+    --netra-primary-strong: #4cc9e8;
+    --netra-primary-dim: rgba(109, 226, 250, 0.14);
+    --netra-primary-border: rgba(109, 226, 250, 0.38);
+    --netra-on-primary: #04141f;
+
+    /* Text */
+    --netra-text: #e6eef7;
+    --netra-text-strong: #f2f8ff;
+    --netra-text-muted: #94a3b8;
+    --netra-text-faint: #6b7a90;
+
+    /* Semantic status */
+    --netra-success: #3dd68c;
+    --netra-warning: #f5a524;
+    --netra-danger: #f2555a;
+    --netra-info: #5aa9f8;
+
+    --netra-success-dim: rgba(61, 214, 140, 0.12);
+    --netra-warning-dim: rgba(245, 165, 36, 0.12);
+    --netra-danger-dim: rgba(242, 85, 90, 0.12);
+    --netra-info-dim: rgba(90, 169, 248, 0.12);
+
+    /* Metrics */
+    --netra-sidebar-width: 248px;
+    --netra-topbar-height: 56px;
+    --netra-radius: 4px;
+    --netra-radius-lg: 6px;
+
+    --netra-space-1: 4px;
+    --netra-space-2: 8px;
+    --netra-space-3: 12px;
+    --netra-space-4: 16px;
+    --netra-space-5: 20px;
+    --netra-space-6: 24px;
+    --netra-space-8: 32px;
+
+    --netra-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    --netra-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+        "Liberation Mono", monospace;
+
+    --netra-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --netra-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* ==========================================================================
+   Reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background-color: var(--netra-background);
+    color: var(--netra-text);
+    font-family: var(--netra-font);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0;
+    font-weight: 600;
+    color: var(--netra-text-strong);
+    letter-spacing: -0.01em;
+}
+
+p {
+    margin: 0 0 var(--netra-space-3);
+}
+
+p:last-child {
+    margin-bottom: 0;
+}
+
+a {
+    color: var(--netra-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--netra-primary-strong);
+    text-decoration: underline;
+}
+
+:focus-visible {
+    outline: 2px solid var(--netra-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--netra-border);
+    margin: var(--netra-space-5) 0;
+}
+
+code,
+kbd,
+samp,
+pre {
+    font-family: var(--netra-font-mono);
+    font-size: 0.92em;
+}
+
+/* Screen-reader only, but focusable (skip link) */
+.netra-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.netra-skip-link:focus {
+    position: fixed;
+    top: var(--netra-space-3);
+    left: var(--netra-space-3);
+    z-index: 100;
+    width: auto;
+    height: auto;
+    clip: auto;
+    padding: var(--netra-space-2) var(--netra-space-4);
+    background: var(--netra-primary);
+    color: var(--netra-on-primary);
+    border-radius: var(--netra-radius);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Typography helpers
+   ========================================================================== */
+
+.netra-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--netra-text-muted);
+}
+
+.netra-label {
+    display: block;
+    margin-bottom: var(--netra-space-2);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--netra-text-muted);
+}
+
+.netra-muted {
+    color: var(--netra-text-muted);
+}
+
+.netra-faint {
+    color: var(--netra-text-faint);
+}
+
+.netra-mono {
+    font-family: var(--netra-font-mono);
+}
+
+.netra-nowrap {
+    white-space: nowrap;
+}
+
+.netra-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.netra-divider {
+    height: 1px;
+    background: var(--netra-border);
+    margin: var(--netra-space-5) 0;
+}
+
+/* ==========================================================================
+   App shell
+   ========================================================================== */
+
+.netra-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.netra-main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.netra-content {
+    flex: 1 1 auto;
+    padding: var(--netra-space-6);
+    min-width: 0;
+}
+
+.netra-content--flush {
+    padding: 0;
+}
+
+/* CSS-only sidebar toggle (no JavaScript) */
+.netra-sidebar-toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.netra-sidebar-backdrop {
+    display: none;
+}
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+
+.netra-sidebar {
+    display: flex;
+    flex: 0 0 var(--netra-sidebar-width);
+    flex-direction: column;
+    width: var(--netra-sidebar-width);
+    background: var(--netra-surface);
+    border-right: 1px solid var(--netra-border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.netra-sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-4) var(--netra-space-4);
+    border-bottom: 1px solid var(--netra-border);
+    min-height: var(--netra-topbar-height);
+}
+
+.netra-brand__mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--netra-primary-border);
+    border-radius: var(--netra-radius);
+    background: var(--netra-primary-dim);
+    color: var(--netra-primary);
+}
+
+.netra-brand__text {
+    min-width: 0;
+}
+
+.netra-brand__name {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--netra-text-strong);
+    line-height: 1.1;
+}
+
+.netra-brand__tagline {
+    display: block;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--netra-text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.netra-sidebar__nav {
+    flex: 1 1 auto;
+    padding: var(--netra-space-4) 0;
+}
+
+.netra-nav__section {
+    padding: var(--netra-space-4) var(--netra-space-4) var(--netra-space-2);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--netra-text-faint);
+}
+
+.netra-nav__section:not(:first-child) {
+    margin-top: var(--netra-space-2);
+}
+
+.netra-nav__link {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+    padding: 7px var(--netra-space-4);
+    border-left: 2px solid transparent;
+    color: var(--netra-text-muted);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.netra-nav__link:hover {
+    background: var(--netra-surface-elevated);
+    color: var(--netra-text);
+    text-decoration: none;
+}
+
+.netra-nav__link:focus-visible {
+    outline-offset: -2px;
+}
+
+.netra-nav__link.is-active {
+    background: var(--netra-surface-elevated);
+    border-left-color: var(--netra-primary);
+    color: var(--netra-primary);
+    font-weight: 600;
+}
+
+.netra-nav__icon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    opacity: 0.85;
+}
+
+.netra-nav__link.is-active .netra-nav__icon {
+    opacity: 1;
+}
+
+.netra-nav__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.netra-sidebar__footer {
+    padding: var(--netra-space-3) 0;
+    border-top: 1px solid var(--netra-border);
+}
+
+/* ==========================================================================
+   Topbar
+   ========================================================================== */
+
+.netra-topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-4);
+    height: var(--netra-topbar-height);
+    padding: 0 var(--netra-space-6);
+    background: var(--netra-background);
+    border-bottom: 1px solid var(--netra-border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.netra-topbar__search {
+    flex: 0 1 320px;
+    margin-inline: auto;
+}
+
+.netra-topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin-left: auto;
+}
+
+.netra-iconbtn {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: var(--netra-radius);
+    background: transparent;
+    color: var(--netra-text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+}
+
+.netra-iconbtn:hover {
+    background: var(--netra-surface-elevated);
+    border-color: var(--netra-border);
+    color: var(--netra-text);
+    text-decoration: none;
+}
+
+.netra-iconbtn__dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--netra-danger);
+    border: 1px solid var(--netra-background);
+}
+
+.netra-userchip {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    padding: 3px var(--netra-space-2) 3px 3px;
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+    background: var(--netra-surface);
+    color: var(--netra-text);
+    text-decoration: none;
+}
+
+.netra-userchip:hover {
+    background: var(--netra-surface-elevated);
+    border-color: var(--netra-border-strong);
+    text-decoration: none;
+}
+
+.netra-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--netra-primary-dim);
+    border: 1px solid var(--netra-primary-border);
+    color: var(--netra-primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.netra-userchip__meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+
+.netra-userchip__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--netra-text);
+    white-space: nowrap;
+}
+
+.netra-userchip__role {
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--netra-primary-strong);
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Page header / breadcrumbs
+   ========================================================================== */
+
+.netra-pageheader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--netra-space-4);
+    margin-bottom: var(--netra-space-5);
+}
+
+.netra-pageheader__title {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.netra-pageheader__subtitle {
+    margin-top: var(--netra-space-1);
+    font-size: 13px;
+    color: var(--netra-text-muted);
+}
+
+.netra-pageheader__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-4);
+    margin-top: var(--netra-space-2);
+    font-size: 12px;
+    color: var(--netra-text-muted);
+}
+
+.netra-pageheader__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    flex: 0 0 auto;
+}
+
+.netra-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin-bottom: var(--netra-space-3);
+    font-size: 11.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-breadcrumbs__sep {
+    color: var(--netra-text-faint);
+}
+
+.netra-breadcrumbs__item[aria-current="page"] {
+    color: var(--netra-text);
+}
+
+/* ==========================================================================
+   Cards / panels
+   ========================================================================== */
+
+.netra-card {
+    background: var(--netra-surface);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+}
+
+.netra-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-4);
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-card__title {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.netra-card__title-icon {
+    color: var(--netra-primary);
+    flex: 0 0 16px;
+}
+
+.netra-card__body {
+    padding: var(--netra-space-4);
+}
+
+.netra-card__body--flush {
+    padding: 0;
+}
+
+.netra-card__footer {
+    padding: var(--netra-space-3) var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+    background: var(--netra-surface-sunken);
+    border-radius: 0 0 var(--netra-radius-lg) var(--netra-radius-lg);
+}
+
+.netra-grid {
+    display: grid;
+    gap: var(--netra-space-4);
+}
+
+.netra-grid--stats {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.netra-grid--2 {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* Asymmetric two-column form layout (wide editor + narrow side panel). */
+.netra-grid--form {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+.netra-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-4);
+}
+
+.netra-row {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+}
+
+.netra-row--between {
+    justify-content: space-between;
+}
+
+/* Stat card */
+.netra-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-1);
+    padding: var(--netra-space-4);
+    background: var(--netra-surface);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+}
+
+.netra-stat__label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--netra-text-muted);
+}
+
+.netra-stat__value {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--netra-text-strong);
+    font-variant-numeric: tabular-nums;
+}
+
+.netra-stat__meta {
+    font-size: 11.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-stat--accent .netra-stat__value {
+    color: var(--netra-primary);
+}
+
+.netra-stat--danger .netra-stat__value {
+    color: var(--netra-danger);
+}
+
+.netra-stat--success .netra-stat__value {
+    color: var(--netra-success);
+}
+
+.netra-stat--warning .netra-stat__value {
+    color: var(--netra-warning);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.netra-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--netra-space-2);
+    padding: 7px var(--netra-space-4);
+    min-height: 34px;
+    border: 1px solid transparent;
+    border-radius: var(--netra-radius);
+    background: var(--netra-surface-elevated);
+    color: var(--netra-text);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.12s ease, border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.netra-btn:hover {
+    background: var(--netra-border);
+    color: var(--netra-text-strong);
+    text-decoration: none;
+}
+
+.netra-btn:active {
+    transform: translateY(0.5px);
+}
+
+.netra-btn:disabled,
+.netra-btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.netra-btn--primary {
+    background: var(--netra-primary);
+    border-color: var(--netra-primary);
+    color: var(--netra-on-primary);
+}
+
+.netra-btn--primary:hover {
+    background: var(--netra-primary-strong);
+    border-color: var(--netra-primary-strong);
+    color: var(--netra-on-primary);
+}
+
+.netra-btn--outline {
+    background: transparent;
+    border-color: var(--netra-border-strong);
+    color: var(--netra-text);
+}
+
+.netra-btn--outline:hover {
+    background: var(--netra-surface-elevated);
+    border-color: var(--netra-primary-border);
+    color: var(--netra-text-strong);
+}
+
+.netra-btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--netra-text-muted);
+}
+
+.netra-btn--ghost:hover {
+    background: var(--netra-surface-elevated);
+    color: var(--netra-text);
+}
+
+.netra-btn--danger {
+    background: var(--netra-danger);
+    border-color: var(--netra-danger);
+    color: #200608;
+}
+
+.netra-btn--block {
+    display: flex;
+    width: 100%;
+}
+
+.netra-btn--lg {
+    min-height: 38px;
+    padding: var(--netra-space-2) var(--netra-space-5);
+    font-size: 12.5px;
+}
+
+.netra-btn--sm {
+    min-height: 28px;
+    padding: 3px var(--netra-space-3);
+    font-size: 11.5px;
+}
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+
+.netra-field {
+    margin-bottom: var(--netra-space-4);
+}
+
+.netra-field:last-child {
+    margin-bottom: 0;
+}
+
+.netra-field__control {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.netra-field__icon {
+    position: absolute;
+    left: var(--netra-space-3);
+    display: grid;
+    place-items: center;
+    color: var(--netra-text-faint);
+    pointer-events: none;
+}
+
+.netra-field__icon + .netra-input {
+    padding-left: 34px;
+}
+
+.netra-input,
+.netra-select,
+.netra-textarea {
+    display: block;
+    width: 100%;
+    padding: 6px var(--netra-space-3);
+    min-height: 34px;
+    background: var(--netra-surface-sunken);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+    color: var(--netra-text);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.netra-textarea {
+    min-height: 84px;
+    padding: var(--netra-space-2) var(--netra-space-3);
+    resize: vertical;
+}
+
+.netra-input::placeholder,
+.netra-textarea::placeholder {
+    color: var(--netra-text-faint);
+}
+
+.netra-input:hover,
+.netra-select:hover,
+.netra-textarea:hover {
+    border-color: var(--netra-border-strong);
+}
+
+.netra-input:focus,
+.netra-select:focus,
+.netra-textarea:focus {
+    outline: none;
+    border-color: var(--netra-primary);
+    box-shadow: 0 0 0 3px var(--netra-primary-dim);
+}
+
+.netra-input[aria-invalid="true"],
+.netra-select[aria-invalid="true"] {
+    border-color: var(--netra-danger);
+}
+
+.netra-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--netra-text-muted) 50%),
+        linear-gradient(135deg, var(--netra-text-muted) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 15px, calc(100% - 10px) 15px;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.netra-select option {
+    background: var(--netra-surface);
+    color: var(--netra-text);
+}
+
+.netra-field__hint {
+    margin-top: var(--netra-space-2);
+    font-size: 11.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-field__error {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--netra-space-1);
+    margin-top: var(--netra-space-2);
+    font-size: 11.5px;
+    color: var(--netra-danger);
+}
+
+.netra-field--invalid .netra-label {
+    color: var(--netra-danger);
+}
+
+.netra-fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.netra-fieldset legend {
+    padding: 0;
+}
+
+.netra-check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--netra-space-2);
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-check:hover {
+    color: var(--netra-text);
+}
+
+.netra-check input[type="checkbox"],
+.netra-check input[type="radio"] {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    margin: 2px 0 0;
+    accent-color: var(--netra-primary);
+    cursor: pointer;
+}
+
+.netra-field__link {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: calc(-1 * var(--netra-space-4) - 2px);
+    margin-bottom: var(--netra-space-4);
+    font-size: 11.5px;
+}
+
+.netra-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--netra-space-2);
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+}
+
+/* Form section (inside cards) */
+.netra-formsection + .netra-formsection {
+    margin-top: var(--netra-space-5);
+    padding-top: var(--netra-space-5);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-formsection__title {
+    margin-bottom: var(--netra-space-1);
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.netra-formsection__hint {
+    margin-bottom: var(--netra-space-4);
+    font-size: 12px;
+    color: var(--netra-text-muted);
+}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+.netra-tablewrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.netra-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.netra-table caption {
+    padding: var(--netra-space-3) var(--netra-space-4);
+    text-align: left;
+    font-size: 12px;
+    color: var(--netra-text-muted);
+}
+
+.netra-table th {
+    padding: var(--netra-space-3) var(--netra-space-4);
+    background: var(--netra-surface-sunken);
+    border-bottom: 1px solid var(--netra-border);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--netra-text-muted);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.netra-table td {
+    padding: var(--netra-space-3) var(--netra-space-4);
+    border-bottom: 1px solid var(--netra-border);
+    color: var(--netra-text);
+    vertical-align: middle;
+}
+
+.netra-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.netra-table tbody tr:hover td {
+    background: var(--netra-surface-elevated);
+}
+
+.netra-table--numeric td.is-numeric,
+.netra-table--numeric th.is-numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.netra-table__primary {
+    font-weight: 600;
+    color: var(--netra-text-strong);
+}
+
+/* Secondary line inside a table cell (e.g. case title under the case number). */
+.netra-cellsub {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--netra-text-muted);
+}
+
+/* Dot + label pair, as used by the reference status legend. */
+.netra-dotline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    font-size: 12.5px;
+    color: var(--netra-text);
+    white-space: nowrap;
+}
+
+.netra-dotline__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 7px;
+}
+
+.netra-table__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-1);
+    color: inherit;
+}
+
+.netra-table__sort:hover {
+    color: var(--netra-primary);
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   Badges
+   ========================================================================== */
+
+.netra-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px var(--netra-space-2);
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.netra-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 6px;
+}
+
+.netra-badge--neutral {
+    background: var(--netra-surface-elevated);
+    border-color: var(--netra-border-strong);
+    color: var(--netra-text-muted);
+}
+
+.netra-badge--info {
+    background: var(--netra-info-dim);
+    border-color: rgba(90, 169, 248, 0.35);
+    color: var(--netra-info);
+}
+
+.netra-badge--success {
+    background: var(--netra-success-dim);
+    border-color: rgba(61, 214, 140, 0.35);
+    color: var(--netra-success);
+}
+
+.netra-badge--warning {
+    background: var(--netra-warning-dim);
+    border-color: rgba(245, 165, 36, 0.35);
+    color: var(--netra-warning);
+}
+
+.netra-badge--danger {
+    background: var(--netra-danger-dim);
+    border-color: rgba(242, 85, 90, 0.35);
+    color: var(--netra-danger);
+}
+
+.netra-badge--primary {
+    background: var(--netra-primary-dim);
+    border-color: var(--netra-primary-border);
+    color: var(--netra-primary);
+}
+
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
+
+.netra-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-3) var(--netra-space-4);
+    border: 1px solid var(--netra-border);
+    border-left-width: 3px;
+    border-radius: var(--netra-radius);
+    background: var(--netra-surface);
+    font-size: 12.5px;
+}
+
+.netra-alert__icon {
+    flex: 0 0 16px;
+    margin-top: 1px;
+}
+
+.netra-alert__title {
+    font-weight: 600;
+    color: var(--netra-text-strong);
+}
+
+.netra-alert__body {
+    min-width: 0;
+}
+
+.netra-alert--info {
+    border-left-color: var(--netra-info);
+    background: var(--netra-info-dim);
+}
+
+.netra-alert--info .netra-alert__icon {
+    color: var(--netra-info);
+}
+
+.netra-alert--success {
+    border-left-color: var(--netra-success);
+    background: var(--netra-success-dim);
+}
+
+.netra-alert--success .netra-alert__icon {
+    color: var(--netra-success);
+}
+
+.netra-alert--warning {
+    border-left-color: var(--netra-warning);
+    background: var(--netra-warning-dim);
+}
+
+.netra-alert--warning .netra-alert__icon {
+    color: var(--netra-warning);
+}
+
+.netra-alert--danger {
+    border-left-color: var(--netra-danger);
+    background: var(--netra-danger-dim);
+}
+
+.netra-alert--danger .netra-alert__icon {
+    color: var(--netra-danger);
+}
+
+/* Inline validation summary */
+.netra-validation {
+    margin-bottom: var(--netra-space-4);
+    padding: var(--netra-space-3);
+    border: 1px solid rgba(242, 85, 90, 0.35);
+    border-left: 3px solid var(--netra-danger);
+    border-radius: var(--netra-radius);
+    background: var(--netra-danger-dim);
+}
+
+.netra-validation ul {
+    margin: var(--netra-space-2) 0 0;
+    padding-left: var(--netra-space-4);
+}
+
+/* ==========================================================================
+   Filters
+   ========================================================================== */
+
+.netra-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-3) var(--netra-space-4);
+    background: var(--netra-surface);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+}
+
+.netra-filters__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-1);
+    min-width: 150px;
+}
+
+/* Full-bleed filter band: horizontal rules only, as on the crime case list. */
+.netra-filters--band {
+    padding: var(--netra-space-4) 0;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--netra-border);
+    border-bottom: 1px solid var(--netra-border);
+    border-radius: 0;
+}
+
+.netra-filters__group--wide {
+    flex: 1 1 240px;
+    max-width: 460px;
+}
+
+.netra-filters__actions {
+    display: flex;
+    gap: var(--netra-space-2);
+    margin-left: auto;
+}
+
+.netra-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    padding: 3px var(--netra-space-2);
+    border: 1px solid var(--netra-border);
+    border-radius: 3px;
+    background: var(--netra-surface-sunken);
+    font-size: 11px;
+    color: var(--netra-text-muted);
+}
+
+.netra-chip__remove {
+    color: var(--netra-text-faint);
+    text-decoration: none;
+    line-height: 1;
+}
+
+.netra-chip__remove:hover {
+    color: var(--netra-danger);
+}
+
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
+
+.netra-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-3) var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+    background: var(--netra-surface-sunken);
+    flex-wrap: wrap;
+}
+
+.netra-pagination__info {
+    font-size: 11.5px;
+    color: var(--netra-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.netra-pagination__list {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.netra-pagination__link {
+    display: grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 var(--netra-space-2);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+    background: var(--netra-surface);
+    color: var(--netra-text-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+}
+
+.netra-pagination__link:hover {
+    background: var(--netra-surface-elevated);
+    color: var(--netra-text);
+    text-decoration: none;
+}
+
+.netra-pagination__link[aria-current="page"] {
+    background: var(--netra-primary);
+    border-color: var(--netra-primary);
+    color: var(--netra-on-primary);
+    font-weight: 700;
+}
+
+.netra-pagination__link[aria-disabled="true"] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.netra-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--netra-space-2);
+    padding: var(--netra-space-8) var(--netra-space-6);
+    text-align: center;
+}
+
+.netra-empty__icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--netra-space-1);
+    border: 1px solid var(--netra-border);
+    border-radius: 50%;
+    background: var(--netra-surface-sunken);
+    color: var(--netra-text-faint);
+}
+
+.netra-empty__title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--netra-text);
+}
+
+.netra-empty__text {
+    max-width: 42ch;
+    font-size: 12.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-empty__action {
+    margin-top: var(--netra-space-2);
+}
+
+/* ==========================================================================
+   Authentication screens
+   ========================================================================== */
+
+.netra-auth {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--netra-background);
+}
+
+.netra-auth__main {
+    display: grid;
+    place-items: center;
+    flex: 1 1 auto;
+    padding: var(--netra-space-8) var(--netra-space-4);
+}
+
+.netra-auth__card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--netra-surface);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+    box-shadow: var(--netra-shadow-lg);
+}
+
+.netra-auth__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--netra-space-2);
+    padding: var(--netra-space-6) var(--netra-space-6) var(--netra-space-5);
+    text-align: center;
+}
+
+.netra-auth__mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--netra-primary-border);
+    border-radius: var(--netra-radius);
+    background: var(--netra-primary-dim);
+    color: var(--netra-primary);
+}
+
+.netra-auth__name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--netra-text-strong);
+    line-height: 1;
+}
+
+.netra-auth__tagline {
+    max-width: 30ch;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    line-height: 1.6;
+    text-transform: uppercase;
+    color: var(--netra-text-faint);
+}
+
+.netra-auth__body {
+    padding: 0 var(--netra-space-6) var(--netra-space-5);
+}
+
+.netra-auth__title {
+    margin-bottom: var(--netra-space-2);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.netra-auth__lead {
+    margin-bottom: var(--netra-space-5);
+    font-size: 12.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-auth__foot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-4) var(--netra-space-6) var(--netra-space-5);
+    border-top: 1px solid var(--netra-border);
+    text-align: center;
+    font-size: 12px;
+    color: var(--netra-text-muted);
+}
+
+.netra-auth__backlink {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.netra-auth__legal {
+    padding: var(--netra-space-4) var(--netra-space-6);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--netra-text-faint);
+}
+
+.netra-classified {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    padding: 3px var(--netra-space-3);
+    border: 1px solid rgba(242, 85, 90, 0.35);
+    border-radius: 3px;
+    background: var(--netra-danger-dim);
+    color: #ff9b9b;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Error pages
+   ========================================================================== */
+
+.netra-errorpage {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: var(--netra-space-6);
+    text-align: center;
+}
+
+.netra-errorpage__code {
+    font-family: var(--netra-font-mono);
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: var(--netra-primary);
+}
+
+.netra-errorpage__title {
+    margin: var(--netra-space-3) 0 var(--netra-space-2);
+    font-size: 18px;
+}
+
+.netra-errorpage__text {
+    max-width: 46ch;
+    margin: 0 auto var(--netra-space-5);
+    font-size: 13px;
+    color: var(--netra-text-muted);
+}
+
+.netra-errorpage__actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--netra-space-2);
+    flex-wrap: wrap;
+}
+
+.netra-errorpage__ref {
+    margin-top: var(--netra-space-5);
+    font-family: var(--netra-font-mono);
+    font-size: 11px;
+    color: var(--netra-text-faint);
+}
+
+/* ==========================================================================
+   Placeholder (unimplemented module)
+   ========================================================================== */
+
+.netra-placeholder__phase {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin-top: var(--netra-space-2);
+    padding: 3px var(--netra-space-3);
+    border: 1px solid var(--netra-primary-border);
+    border-radius: 3px;
+    background: var(--netra-primary-dim);
+    color: var(--netra-primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.netra-hidden {
+    display: none !important;
+}
+
+/* Visible only on narrow viewports (used by the CSS-only drawer toggle). */
+.netra-only-narrow {
+    display: none;
+}
+
+.netra-mt-0 { margin-top: 0; }
+.netra-mt-2 { margin-top: var(--netra-space-2); }
+.netra-mt-3 { margin-top: var(--netra-space-3); }
+.netra-mt-4 { margin-top: var(--netra-space-4); }
+.netra-mt-6 { margin-top: var(--netra-space-6); }
+.netra-mb-3 { margin-bottom: var(--netra-space-3); }
+.netra-mb-4 { margin-bottom: var(--netra-space-4); }
+.netra-mb-5 { margin-bottom: var(--netra-space-5); }
+
+.netra-text-success { color: var(--netra-success); }
+.netra-text-warning { color: var(--netra-warning); }
+.netra-text-danger { color: var(--netra-danger); }
+.netra-text-info { color: var(--netra-info); }
+.netra-text-primary { color: var(--netra-primary); }
+
+/* ==========================================================================
+   Server-rendered SVG charts
+   ========================================================================== */
+
+.netra-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.netra-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: var(--netra-font);
+}
+
+/* Series palette — six slots, cycled by the renderers. */
+.netra-chart__series-0 { --netra-series: var(--netra-primary); }
+.netra-chart__series-1 { --netra-series: var(--netra-info); }
+.netra-chart__series-2 { --netra-series: var(--netra-warning); }
+.netra-chart__series-3 { --netra-series: var(--netra-danger); }
+.netra-chart__series-4 { --netra-series: var(--netra-success); }
+.netra-chart__series-5 { --netra-series: #b48ef7; }
+
+.netra-chart__grid {
+    stroke: var(--netra-border);
+    stroke-width: 1;
+}
+
+.netra-chart__axis-label {
+    fill: var(--netra-text-faint);
+    font-size: 9px;
+}
+
+.netra-chart__area {
+    fill: var(--netra-primary-dim);
+    stroke: none;
+}
+
+.netra-chart__line {
+    fill: none;
+    stroke: var(--netra-primary);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.netra-chart__point {
+    fill: var(--netra-primary);
+    stroke: var(--netra-background);
+    stroke-width: 1.5;
+}
+
+.netra-chart__donut-track {
+    fill: none;
+    stroke: var(--netra-surface-elevated);
+    stroke-width: 26;
+}
+
+.netra-chart__donut-segment {
+    fill: none;
+    stroke: var(--netra-series, var(--netra-primary));
+    stroke-width: 26;
+    transform: rotate(-90deg);
+    transform-origin: 130px 126px;
+}
+
+.netra-chart__donut-value {
+    fill: var(--netra-text-strong);
+    font-size: 26px;
+    font-weight: 600;
+}
+
+.netra-chart__donut-label {
+    fill: var(--netra-text-muted);
+    font-size: 9px;
+    letter-spacing: 0.09em;
+}
+
+.netra-chart__bar-label {
+    fill: var(--netra-text-muted);
+    font-size: 10px;
+}
+
+.netra-chart__bar-track {
+    fill: var(--netra-surface-sunken);
+    stroke: var(--netra-border);
+    stroke-width: 1;
+}
+
+.netra-chart__bar {
+    fill: var(--netra-series, var(--netra-primary));
+}
+
+.netra-chart__bar-value {
+    fill: var(--netra-text);
+    font-size: 9.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.netra-chart__legend-swatch {
+    fill: var(--netra-series, var(--netra-primary));
+}
+
+.netra-chart__legend-label {
+    fill: var(--netra-text-muted);
+    font-size: 10px;
+}
+
+.netra-chart__legend-value {
+    fill: var(--netra-text);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Compact tables inside dashboard panels. */
+.netra-table--compact th,
+.netra-table--compact td {
+    padding: var(--netra-space-2) var(--netra-space-3);
+    font-size: 12px;
+}
+
+/* Insight list on Crime Analytics. */
+.netra-insights {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+}
+
+.netra-insights__item {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--netra-text);
+    padding-left: var(--netra-space-4);
+    position: relative;
+}
+
+.netra-insights__item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--netra-primary);
+}
+
+.netra-stat--primary .netra-stat__value {
+    color: var(--netra-primary);
+}
+
+.netra-stat--info .netra-stat__value {
+    color: var(--netra-info);
+}
+
+/* ==========================================================================
+   Responsive — desktop first, then laptop / tablet
+   ========================================================================== */
+
+@media (max-width: 1440px) {
+    :root {
+        --netra-sidebar-width: 236px;
+    }
+}
+
+@media (max-width: 1200px) {
+    :root {
+        --netra-sidebar-width: 220px;
+    }
+
+    .netra-content {
+        padding: var(--netra-space-5);
+    }
+
+    .netra-topbar {
+        padding: 0 var(--netra-space-5);
+    }
+}
+
+/* Tablet: sidebar becomes an overlay drawer toggled without JavaScript */
+@media (max-width: 900px) {
+    .netra-shell {
+        display: block;
+    }
+
+    .netra-only-narrow {
+        display: grid;
+    }
+
+    .netra-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 60;
+        width: var(--netra-sidebar-width);
+        transform: translateX(-100%);
+        transition: transform 0.18s ease;
+    }
+
+    .netra-sidebar-toggle:checked ~ .netra-shell .netra-sidebar {
+        transform: translateX(0);
+    }
+
+    .netra-sidebar-toggle:checked ~ .netra-shell .netra-sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(4, 10, 20, 0.6);
+    }
+
+    .netra-topbar__search {
+        flex: 1 1 auto;
+        max-width: none;
+    }
+
+    .netra-userchip__meta {
+        display: none;
+    }
+
+    .netra-grid--stats {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .netra-grid--form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .netra-content {
+        padding: var(--netra-space-4);
+    }
+
+    .netra-topbar {
+        padding: 0 var(--netra-space-4);
+        gap: var(--netra-space-2);
+    }
+
+    .netra-pageheader {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .netra-auth__brand,
+    .netra-auth__body,
+    .netra-auth__foot {
+        padding-left: var(--netra-space-4);
+        padding-right: var(--netra-space-4);
+    }
+}
+
+@media print {
+    .netra-sidebar,
+    .netra-topbar {
+        display: none;
+    }
+}
+
+/* =========================================================================
+   Phase 6 — Risk & Anomaly Analysis + Crime Intelligence Map
+   ========================================================================= */
+
+.netra-inline-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.netra-card__header--standalone {
+    padding: 0;
+    margin-bottom: var(--netra-space-4);
+}
+
+.netra-card__title-icon--warning {
+    color: var(--netra-warning);
+}
+
+.netra-table__cell--text {
+    text-align: left;
+}
+
+.netra-table__row--active {
+    background: var(--netra-primary-dim);
+}
+
+.netra-card--highlight {
+    border-color: var(--netra-primary-border);
+}
+
+/* Definition-list facts (map selected-incident panel). */
+.netra-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--netra-space-3) var(--netra-space-5);
+    margin: 0;
+}
+
+.netra-facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.netra-facts dt {
+    font-size: var(--netra-font-size-sm);
+    color: var(--netra-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.netra-facts dd {
+    margin: 0;
+    color: var(--netra-text-strong);
+    /* Identities are unbroken tokens; without this a long username or email
+       overflows its column and prints over the value beside it. */
+    overflow-wrap: anywhere;
+}
+
+/* Area Risk Analysis table. */
+.netra-risk-table th[scope="row"] {
+    font-weight: var(--netra-font-weight-semibold);
+    color: var(--netra-text-strong);
+    text-align: left;
+}
+
+.netra-risk-table__explanation td {
+    padding-top: 0;
+    padding-bottom: var(--netra-space-4);
+    font-size: var(--netra-font-size-sm);
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-risk-trend--danger { color: var(--netra-danger); }
+.netra-risk-trend--success { color: var(--netra-success); }
+.netra-risk-trend--neutral { color: var(--netra-text-muted); }
+.netra-risk-trend--warning { color: var(--netra-warning); }
+.netra-risk-trend--info { color: var(--netra-info); }
+.netra-risk-trend--primary { color: var(--netra-primary); }
+
+/* Sparkline. */
+.netra-sparkline {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.netra-sparkline__line {
+    fill: none;
+    stroke: var(--netra-primary);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+/* Anomaly cards. */
+.netra-anomaly {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--netra-space-4);
+    align-items: start;
+}
+
+.netra-anomaly__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--netra-radius-md);
+    background: var(--netra-surface-sunken);
+    color: var(--netra-text-muted);
+}
+
+.netra-anomaly__icon--danger { color: var(--netra-danger); background: var(--netra-danger-dim); }
+.netra-anomaly__icon--warning { color: var(--netra-warning); background: var(--netra-warning-dim); }
+.netra-anomaly__icon--info { color: var(--netra-info); background: var(--netra-info-dim); }
+.netra-anomaly__icon--success { color: var(--netra-success); background: var(--netra-success-dim); }
+
+.netra-anomaly__body {
+    min-width: 0;
+}
+
+.netra-anomaly__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+}
+
+.netra-anomaly__title {
+    margin: 0;
+    font-size: var(--netra-font-size-md);
+    font-weight: var(--netra-font-weight-semibold);
+    color: var(--netra-text-strong);
+}
+
+.netra-anomaly__description {
+    margin: var(--netra-space-2) 0 var(--netra-space-3);
+    color: var(--netra-text-muted);
+    font-size: var(--netra-font-size-sm);
+    line-height: 1.5;
+}
+
+.netra-anomaly__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-5);
+    margin: 0;
+}
+
+.netra-anomaly__facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.netra-anomaly__facts dt {
+    font-size: var(--netra-font-size-xs);
+    color: var(--netra-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.netra-anomaly__facts dd {
+    margin: 0;
+    font-size: var(--netra-font-size-sm);
+    color: var(--netra-text);
+}
+
+.netra-anomaly__metric--danger { color: var(--netra-danger) !important; font-weight: var(--netra-font-weight-semibold); }
+.netra-anomaly__metric--warning { color: var(--netra-warning) !important; font-weight: var(--netra-font-weight-semibold); }
+.netra-anomaly__metric--info { color: var(--netra-info) !important; font-weight: var(--netra-font-weight-semibold); }
+.netra-anomaly__metric--success { color: var(--netra-success) !important; font-weight: var(--netra-font-weight-semibold); }
+
+/* Crime map. */
+.netra-map-card__body {
+    padding: 0;
+    background: var(--netra-background);
+}
+
+.netra-map {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.netra-map__bg {
+    fill: #060d1a;
+}
+
+.netra-map__grid {
+    stroke: var(--netra-border);
+    stroke-width: 0.5;
+    opacity: 0.5;
+}
+
+.netra-map__hotspot {
+    fill: var(--netra-danger);
+    stroke: none;
+}
+
+.netra-map__district {
+    fill: var(--netra-text-muted);
+    font-size: 13px;
+    font-weight: var(--netra-font-weight-semibold);
+    letter-spacing: 0.03em;
+}
+
+.netra-map__point circle {
+    stroke: #060d1a;
+    stroke-width: 1;
+}
+
+.netra-map__point--critical circle { fill: var(--netra-danger); }
+.netra-map__point--high circle { fill: var(--netra-warning); }
+.netra-map__point--medium circle { fill: var(--netra-info); }
+.netra-map__point--low circle { fill: var(--netra-success); }
+
+.netra-map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-4);
+    padding: var(--netra-space-3) var(--netra-space-5);
+    background: var(--netra-surface);
+    border-top: 1px solid var(--netra-border);
+    font-size: var(--netra-font-size-sm);
+    color: var(--netra-text-muted);
+}
+
+.netra-map-legend__heading {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: var(--netra-font-size-xs);
+    color: var(--netra-text-faint);
+}
+
+.netra-map-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-map-legend__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.netra-map-legend__dot--critical { background: var(--netra-danger); }
+.netra-map-legend__dot--high { background: var(--netra-warning); }
+.netra-map-legend__dot--medium { background: var(--netra-info); }
+.netra-map-legend__dot--low { background: var(--netra-success); }
+
+.netra-map-legend__halo {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--netra-danger-dim);
+    border: 1px solid var(--netra-danger);
+    display: inline-block;
+}
+
+/* Incident quick-view list (Crime Map sidebar). */
+.netra-incident-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+}
+
+.netra-incident {
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+    padding: var(--netra-space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.netra-incident--active {
+    border-color: var(--netra-primary-border);
+    background: var(--netra-primary-dim);
+}
+
+.netra-incident__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-2);
+}
+
+.netra-incident__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-2);
+    margin-top: var(--netra-space-1);
+}
+
+/* Network & Link Analysis. SVG remains server-rendered; these styles deliberately
+   reuse the established dark canvas, cards, filters and cyan accent system. */
+.netra-network-filters .netra-filters__group {
+    min-width: 138px;
+}
+
+.netra-network-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+    gap: var(--netra-space-4);
+    align-items: start;
+}
+
+.netra-network-card__body {
+    padding: 0;
+    background: #060d1a;
+    min-height: 490px;
+}
+
+.netra-network-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+}
+
+.netra-network {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 490px;
+}
+
+.netra-network__bg {
+    fill: #060d1a;
+}
+
+.netra-network__grid {
+    stroke: #19304b;
+    stroke-width: 0.7;
+    opacity: 0.38;
+}
+
+.netra-network__relationship line {
+    stroke: #53708c;
+    stroke-width: 1.4;
+    opacity: 0.85;
+}
+
+.netra-network__relationship-label {
+    fill: var(--netra-text-faint);
+    font-size: 10px;
+    paint-order: stroke;
+    stroke: #060d1a;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+
+.netra-network__node > circle,
+.netra-network__node > rect,
+.netra-network__node > path {
+    stroke-width: 1.8;
+}
+
+.netra-network__node--person > circle {
+    fill: #153d58;
+    stroke: #6de2fa;
+}
+
+.netra-network__node--case > rect {
+    fill: #3a2c18;
+    stroke: #f5ba56;
+}
+
+.netra-network__node--location > path {
+    fill: #143f35;
+    stroke: #58d5ac;
+}
+
+.netra-network__node--selected > circle,
+.netra-network__node--selected > rect,
+.netra-network__node--selected > path {
+    stroke: #e6eef7;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 6px rgba(109, 226, 250, 0.72));
+}
+
+.netra-network__node-label {
+    fill: var(--netra-text);
+    font-size: 12px;
+    font-weight: var(--netra-font-weight-semibold);
+}
+
+.netra-network__node-subtitle {
+    fill: var(--netra-text-faint);
+    font-size: 10px;
+}
+
+.netra-network__legend > text {
+    fill: var(--netra-text-muted);
+    font-size: 11px;
+    font-weight: var(--netra-font-weight-semibold);
+    letter-spacing: 0.04em;
+}
+
+.netra-network__legend-person { fill: #153d58; stroke: #6de2fa; }
+.netra-network__legend-case { fill: #3a2c18; stroke: #f5ba56; }
+.netra-network__legend-location { fill: #143f35; stroke: #58d5ac; }
+
+.netra-network-detail__name {
+    margin: 0;
+    color: var(--netra-text);
+    font-size: var(--netra-font-size-lg);
+    font-weight: var(--netra-font-weight-semibold);
+}
+
+.netra-network-detail__subtitle {
+    margin: 3px 0 var(--netra-space-4);
+    color: var(--netra-text-muted);
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-network-facts {
+    grid-template-columns: 1fr;
+    gap: var(--netra-space-2);
+}
+
+.netra-network-summary,
+.netra-network-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.netra-network-summary {
+    display: grid;
+    gap: var(--netra-space-2);
+}
+
+.netra-network-summary li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--netra-space-2);
+    border-bottom: 1px solid var(--netra-border);
+    color: var(--netra-text-muted);
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-network-summary strong {
+    color: var(--netra-primary);
+}
+
+.netra-network-list {
+    display: grid;
+    gap: var(--netra-space-2);
+}
+
+.netra-network-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-2) 0;
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-network-list li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.netra-network-list strong,
+.netra-network-list span {
+    display: block;
+}
+
+.netra-network-list strong {
+    color: var(--netra-text);
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-network-list span {
+    margin-top: 2px;
+    color: var(--netra-text-faint);
+    font-size: var(--netra-font-size-xs);
+}
+
+@media (max-width: 720px) {
+    .netra-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .netra-network-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .netra-network-card__body,
+    .netra-network {
+        min-height: 360px;
+    }
+
+    .netra-network-card__footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+/* ==========================================================================
+   Image-Assisted Investigation (Phase 8)
+   ========================================================================== */
+
+.netra-image-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--netra-space-5);
+    align-items: start;
+}
+
+.netra-image-layout--secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: var(--netra-space-5);
+}
+
+.netra-image-disclaimer {
+    margin-bottom: var(--netra-space-5);
+}
+
+.netra-image-input,
+.netra-image-matches,
+.netra-match-detail {
+    min-width: 0;
+}
+
+.netra-image-preview {
+    margin-top: var(--netra-space-5);
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-image-preview__head {
+    margin-bottom: var(--netra-space-3);
+}
+
+.netra-image-preview__frame {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    height: 200px;
+    margin-bottom: var(--netra-space-4);
+    padding: var(--netra-space-2);
+    background: var(--netra-surface-sunken);
+    border: 1px solid var(--netra-border-strong);
+    border-radius: var(--netra-radius-lg);
+    object-fit: contain;
+}
+
+.netra-match-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--netra-space-4);
+}
+
+.netra-match-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-4);
+    background: var(--netra-surface-elevated);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+    box-shadow: var(--netra-shadow);
+}
+
+.netra-match-card__head {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+}
+
+.netra-match-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--netra-primary-dim);
+    border: 1px solid var(--netra-primary-border);
+    color: var(--netra-primary);
+    font-size: var(--netra-font-size-sm);
+    font-weight: var(--netra-font-weight-semibold);
+}
+
+.netra-match-card__identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.netra-match-card__identity strong {
+    display: block;
+    color: var(--netra-text-strong);
+    font-size: var(--netra-font-size-sm);
+    overflow-wrap: anywhere;
+}
+
+.netra-match-card__identity span {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--netra-font-size-xs);
+    overflow-wrap: anywhere;
+}
+
+.netra-match-score {
+    flex: none;
+}
+
+.netra-match-card__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-2) var(--netra-space-4);
+    color: var(--netra-text-muted);
+    font-size: var(--netra-font-size-xs);
+}
+
+.netra-match-card__facts strong {
+    color: var(--netra-primary);
+}
+
+.netra-match-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    margin-top: auto;
+    padding-top: var(--netra-space-2);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-match-card__note {
+    font-size: var(--netra-font-size-xs);
+}
+
+.netra-match-footnote {
+    margin: var(--netra-space-4) 0 0;
+    font-size: var(--netra-font-size-xs);
+}
+
+.netra-match-detail__actions {
+    display: flex;
+    gap: var(--netra-space-3);
+    margin-top: var(--netra-space-4);
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-record-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--netra-space-2);
+}
+
+.netra-record-list__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-2) 0;
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-record-list__item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.netra-record-list__item strong {
+    display: block;
+    color: var(--netra-text);
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-record-list__item span {
+    display: block;
+    margin-top: 2px;
+    color: var(--netra-text-faint);
+    font-size: var(--netra-font-size-xs);
+}
+
+.netra-record-list__aside {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+    flex: none;
+}
+
+@media (max-width: 1080px) {
+    .netra-image-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .netra-image-layout--secondary {
+        grid-template-columns: 1fr;
+    }
+
+    .netra-match-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .netra-match-card__actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   NETRA Bulk Data Import (Phase 12)
+   ========================================================================== */
+
+.netra-import-note {
+    margin-bottom: var(--netra-space-5);
+}
+
+.netra-import-steps__list {
+    display: grid;
+    gap: var(--netra-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.netra-import-steps__list li {
+    display: flex;
+    gap: var(--netra-space-3);
+    align-items: flex-start;
+}
+
+.netra-import-steps__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--netra-primary-dim);
+    color: var(--netra-primary-strong);
+    font-size: var(--netra-font-size-sm);
+    font-weight: 600;
+}
+
+.netra-import-steps__list strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.netra-import-steps__list p {
+    margin: 0;
+}
+
+.netra-import-layout,
+.netra-import-upload-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--netra-space-5);
+    align-items: start;
+    margin-bottom: var(--netra-space-5);
+}
+
+/* The recent-imports table carries a status badge and an action button, so it
+   needs the wider half of the landing page. */
+.netra-import-layout {
+    grid-template-columns: minmax(0, 11fr) minmax(0, 14fr);
+}
+
+.netra-import-layout > *,
+.netra-import-upload-layout > * {
+    min-width: 0;
+}
+
+.netra-import-form__actions,
+.netra-import-actions .netra-card__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-3);
+    align-items: center;
+}
+
+.netra-import-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.netra-import-actions {
+    margin-bottom: var(--netra-space-5);
+}
+
+.netra-import-job {
+    padding: var(--netra-space-5);
+    margin-bottom: var(--netra-space-5);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface);
+}
+
+.netra-import-job__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-3);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.netra-import-job__name {
+    margin: 0;
+    font-size: var(--netra-font-size-lg);
+}
+
+.netra-import-job__facts {
+    margin-top: var(--netra-space-4);
+}
+
+.netra-import-job__counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-2);
+    margin-top: var(--netra-space-4);
+}
+
+.netra-import-count {
+    display: inline-flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 4px 10px;
+    border: 1px solid var(--netra-border);
+    border-radius: 999px;
+    background: var(--netra-surface-sunken);
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-import-count--valid {
+    border-color: rgba(22, 128, 74, 0.35);
+    color: #166534;
+}
+
+.netra-import-count--invalid {
+    border-color: rgba(185, 28, 28, 0.35);
+    color: #991b1b;
+}
+
+.netra-import-count--duplicate {
+    border-color: rgba(180, 83, 9, 0.35);
+    color: #92400e;
+}
+
+.netra-import-count--warning,
+.netra-import-count--imported {
+    border-color: rgba(11, 110, 138, 0.35);
+    color: var(--netra-primary-strong);
+}
+
+.netra-import-job__blocked {
+    margin: var(--netra-space-3) 0 0;
+}
+
+.netra-import-requirements__title {
+    margin: 0 0 var(--netra-space-2);
+    font-size: var(--netra-font-size-md);
+}
+
+.netra-import-limits,
+.netra-import-values {
+    margin-top: var(--netra-space-5);
+}
+
+.netra-import-limits__list {
+    display: grid;
+    gap: var(--netra-space-2);
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.netra-import-values__note {
+    margin: var(--netra-space-2) 0 0;
+}
+
+.netra-import-columns th[scope="row"] {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.netra-import-issues td,
+.netra-import-problemrows td,
+.netra-import-preview td {
+    vertical-align: top;
+}
+
+.netra-import-issues__footnote {
+    margin: var(--netra-space-3) 0 0;
+}
+
+.netra-import-totals__stamp {
+    margin: var(--netra-space-4) 0 0;
+}
+
+.netra-import-preview-scroll {
+    overflow-x: auto;
+}
+
+.netra-import-preview {
+    min-width: 1100px;
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-import-preview th,
+.netra-import-preview td {
+    white-space: nowrap;
+}
+
+.netra-import-preview__footnote {
+    margin: var(--netra-space-3) 0 0;
+}
+
+.netra-import-holdback {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-4);
+    margin: 0 0 var(--netra-space-2);
+}
+
+.netra-import-holdback__list {
+    display: grid;
+    gap: var(--netra-space-2);
+    margin: var(--netra-space-3) 0 0;
+    padding-left: 1.1rem;
+}
+
+.netra-import-holdback__list .netra-mono {
+    margin-right: var(--netra-space-2);
+}
+
+.netra-import-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-3);
+    align-items: center;
+}
+
+.netra-import-confirm__note {
+    font-size: var(--netra-font-size-sm);
+}
+
+.netra-import-result__summary {
+    margin: var(--netra-space-2) 0 0;
+}
+
+.netra-import-result__ownership {
+    margin: var(--netra-space-4) 0 0;
+}
+
+.netra-import-jobs th,
+.netra-import-jobs td {
+    padding: var(--netra-space-2) var(--netra-space-3);
+}
+
+.netra-import-jobs td {
+    vertical-align: middle;
+}
+
+.netra-import-jobs .netra-table__primary {
+    display: block;
+}
+
+/* The status badge is the widest cell here, so it carries the tightest fit. */
+.netra-import-jobs .netra-badge {
+    padding: 2px var(--netra-space-1);
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 1080px) {
+    .netra-import-layout,
+    .netra-import-upload-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+    .netra-import-job {
+        padding: var(--netra-space-4);
+    }
+
+    .netra-import-actions .netra-card__body {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .netra-import-actions form,
+    .netra-import-confirm {
+        width: 100%;
+    }
+
+    .netra-import-actions .netra-btn,
+    .netra-import-confirm .netra-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   NETRA AI Assistant (Phase 9)
+   ========================================================================== */
+
+.netra-assistant-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: var(--netra-space-5);
+    align-items: start;
+}
+
+.netra-assistant-sessions,
+.netra-assistant-chat {
+    min-width: 0;
+}
+
+.netra-assistant-disclaimer {
+    margin-bottom: var(--netra-space-5);
+}
+
+.netra-assistant-new {
+    margin-bottom: var(--netra-space-4);
+}
+
+.netra-assistant-sessions .netra-record-list__item {
+    align-items: flex-start;
+    gap: var(--netra-space-3);
+}
+
+.netra-assistant-sessions .netra-record-list__item > a {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.netra-assistant-sessions .netra-record-list__aside {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.netra-chat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-4);
+}
+
+.netra-msg {
+    max-width: 82%;
+    padding: var(--netra-space-4);
+    background: var(--netra-surface-elevated);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+    box-shadow: var(--netra-shadow);
+}
+
+.netra-msg--user {
+    align-self: flex-end;
+    background: var(--netra-primary-dim);
+    border-color: var(--netra-primary-border);
+}
+
+.netra-msg--assistant {
+    align-self: stretch;
+    max-width: 100%;
+}
+
+.netra-msg__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--netra-space-2);
+    margin-bottom: var(--netra-space-2);
+}
+
+.netra-msg__body {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.netra-assistant-form {
+    margin-top: var(--netra-space-5);
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-assistant-input {
+    resize: vertical;
+    font-family: var(--netra-font);
+}
+
+.netra-assistant-footnote {
+    margin-top: var(--netra-space-3);
+}
+
+@media (max-width: 1080px) {
+    .netra-assistant-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .netra-msg {
+        max-width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Alerts & Notifications (Phase 10) — visual reference: netra.pdf page 12.
+   Dense alert cards with severity accent, meta line and inline actions.
+   ========================================================================== */
+
+.netra-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+}
+
+.netra-alert-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-2);
+    padding: var(--netra-space-4);
+    border: 1px solid var(--netra-border);
+    border-left: 3px solid var(--netra-border-strong);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface);
+}
+
+.netra-alert-card--danger { border-left-color: var(--netra-danger); }
+.netra-alert-card--warning { border-left-color: var(--netra-warning); }
+.netra-alert-card--info { border-left-color: var(--netra-info); }
+.netra-alert-card--success { border-left-color: var(--netra-success); }
+.netra-alert-card--primary { border-left-color: var(--netra-primary); }
+
+.netra-alert-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-alert-card__time {
+    margin-left: auto;
+    color: var(--netra-text-faint);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.netra-alert-card__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--netra-text-strong);
+    overflow-wrap: anywhere;
+}
+
+.netra-alert-card__title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.netra-alert-card__title a:hover {
+    color: var(--netra-primary);
+    text-decoration: underline;
+}
+
+.netra-alert-card__description {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--netra-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.netra-alert-card__meta {
+    font-size: 11px;
+    color: var(--netra-text-faint);
+    overflow-wrap: anywhere;
+}
+
+.netra-alert-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-2) var(--netra-space-4);
+    margin-top: var(--netra-space-2);
+}
+
+.netra-alert-card__buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin-left: auto;
+}
+
+.netra-alert__badges {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-alert__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-4);
+}
+
+.netra-alert__basis {
+    margin: 0 0 var(--netra-space-3);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--netra-text);
+    overflow-wrap: anywhere;
+}
+
+.netra-alert__disclaimer {
+    margin: 0;
+    font-size: 11px;
+}
+
+.netra-btn--success {
+    background: var(--netra-success);
+    border-color: var(--netra-success);
+    color: var(--netra-on-primary);
+}
+
+.netra-notifications {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+}
+
+.netra-notification {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-2);
+    padding: var(--netra-space-4);
+    border: 1px solid var(--netra-border);
+    border-left: 3px solid var(--netra-border);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface);
+}
+
+.netra-notification--unread {
+    border-left-color: var(--netra-primary);
+    background: var(--netra-surface-elevated);
+}
+
+.netra-notification__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-notification__time {
+    margin-left: auto;
+    color: var(--netra-text-faint);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.netra-notification__title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--netra-text-strong);
+    overflow-wrap: anywhere;
+}
+
+.netra-notification__message {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--netra-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.netra-notification__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+@media (max-width: 900px) {
+    .netra-alert-card__time,
+    .netra-notification__time {
+        margin-left: 0;
+        flex-basis: 100%;
+    }
+}
+
+/* ==========================================================================
+   Reports & Intelligence Summaries (Phase 11) — visual reference: netra.pdf
+   page 10. Tab strip over a card library, plus a document layout that prints
+   cleanly. Server-rendered only: no JavaScript participates in any of it.
+   ========================================================================== */
+
+.netra-report-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-3);
+    margin-top: var(--netra-space-6);
+}
+
+.netra-report-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-1);
+}
+
+.netra-report-tabs__item {
+    padding: var(--netra-space-2) var(--netra-space-3);
+    border: 1px solid transparent;
+    border-radius: var(--netra-radius);
+    color: var(--netra-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.netra-report-tabs__item:hover {
+    color: var(--netra-text-strong);
+    background: var(--netra-surface);
+}
+
+.netra-report-tabs__item.is-active {
+    color: var(--netra-on-primary);
+    background: var(--netra-primary);
+    border-color: var(--netra-primary);
+}
+
+.netra-reports {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--netra-space-4);
+}
+
+.netra-report-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-4);
+    border: 1px solid var(--netra-border);
+    border-top: 3px solid var(--netra-border-strong);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface);
+}
+
+.netra-report-card--danger { border-top-color: var(--netra-danger); }
+.netra-report-card--warning { border-top-color: var(--netra-warning); }
+.netra-report-card--info { border-top-color: var(--netra-info); }
+.netra-report-card--success { border-top-color: var(--netra-success); }
+.netra-report-card--primary { border-top-color: var(--netra-primary); }
+
+.netra-report-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-report-card__type {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    color: var(--netra-text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.netra-report-card__type-icon {
+    display: inline-flex;
+    color: var(--netra-primary);
+}
+
+.netra-report-card__type-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.netra-report-card__period {
+    margin-left: auto;
+    padding: 2px var(--netra-space-2);
+    border: 1px solid var(--netra-border-strong);
+    border-radius: var(--netra-radius);
+    color: var(--netra-text-faint);
+    font-family: var(--netra-font-mono);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.netra-report-card__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--netra-text-strong);
+    overflow-wrap: anywhere;
+}
+
+.netra-report-card__title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.netra-report-card__title a:hover {
+    color: var(--netra-primary);
+    text-decoration: underline;
+}
+
+.netra-report-card__summary {
+    margin: 0;
+    color: var(--netra-text-muted);
+    font-size: 12px;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.netra-report-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+.netra-report-card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    margin-top: auto;
+    padding-top: var(--netra-space-3);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-report-card__author {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.netra-report-card__author-label {
+    color: var(--netra-text-faint);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.netra-report-card__author-value {
+    color: var(--netra-text-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.netra-report-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+/* ------------------------------------------------------------- document --- */
+
+.netra-doc {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-6);
+    max-width: 900px;
+    margin-top: var(--netra-space-6);
+    padding: var(--netra-space-8);
+    border: 1px solid var(--netra-border);
+    border-top: 4px solid var(--netra-primary);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface);
+    box-shadow: var(--netra-shadow);
+}
+
+.netra-doc--danger { border-top-color: var(--netra-danger); }
+.netra-doc--warning { border-top-color: var(--netra-warning); }
+.netra-doc--info { border-top-color: var(--netra-info); }
+.netra-doc--success { border-top-color: var(--netra-success); }
+
+.netra-doc__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+    padding-bottom: var(--netra-space-4);
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-doc__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+    color: var(--netra-primary);
+}
+
+.netra-doc__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--netra-primary-border);
+    border-radius: var(--netra-radius);
+    background: var(--netra-primary-dim);
+}
+
+.netra-doc__mark svg {
+    width: 18px;
+    height: 18px;
+}
+
+.netra-doc__brand-name {
+    display: block;
+    color: var(--netra-text-strong);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.netra-doc__brand-sub {
+    display: block;
+    color: var(--netra-text-faint);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.netra-doc__title {
+    margin: 0;
+    color: var(--netra-text-strong);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.netra-doc__classification {
+    margin: 0;
+    color: var(--netra-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.netra-doc__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-3);
+    break-inside: avoid;
+}
+
+.netra-doc__heading {
+    margin: 0;
+    padding-bottom: var(--netra-space-2);
+    border-bottom: 1px solid var(--netra-border);
+    color: var(--netra-text-strong);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.netra-doc__lead {
+    margin: 0;
+    color: var(--netra-text);
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.netra-doc__paragraph {
+    margin: 0 0 var(--netra-space-2);
+    color: var(--netra-text);
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.netra-doc__list,
+.netra-doc__findings {
+    margin: 0;
+    padding-left: var(--netra-space-5);
+    color: var(--netra-text-muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.netra-doc__findings li + li {
+    margin-top: var(--netra-space-2);
+}
+
+.netra-doc__note {
+    margin: 0;
+    color: var(--netra-text-faint);
+    font-size: 11.5px;
+    line-height: 1.55;
+}
+
+.netra-doc__section--authored {
+    padding: var(--netra-space-4);
+    border: 1px dashed var(--netra-primary-border);
+    border-radius: var(--netra-radius-lg);
+    background: var(--netra-surface-sunken);
+}
+
+.netra-doc__footer {
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+    color: var(--netra-text-faint);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.netra-doc__footer p {
+    margin: 0 0 var(--netra-space-2);
+}
+
+.netra-doc__reference {
+    font-family: var(--netra-font-mono);
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 1200px) {
+    .netra-reports {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .netra-reports {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .netra-doc {
+        padding: var(--netra-space-5);
+    }
+}
+
+/* ==========================================================================
+   User Management + Audit Logs (Phase 13)
+   Two data-dense administration tables, their forms and the account/entry detail
+   pages. Built only from existing NETRA tokens and components — no new framework,
+   no client-side code, and every grid collapses before it can widen the page.
+   ========================================================================== */
+
+.netra-users__form {
+    display: grid;
+    gap: var(--netra-space-4);
+    margin-top: var(--netra-space-4);
+}
+
+.netra-users__detail,
+.netra-audit__detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--netra-space-4);
+    margin-top: var(--netra-space-4);
+}
+
+/* Two columns only once there is real room for them; one column below that. */
+@media (min-width: 1100px) {
+    .netra-users__detail {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
+
+    .netra-audit__detail {
+        grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    }
+}
+
+.netra-users__pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--netra-space-3);
+}
+
+@media (max-width: 720px) {
+    .netra-users__pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.netra-users__roles,
+.netra-users__roles-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-2);
+}
+
+.netra-users__roles-list {
+    align-items: center;
+    gap: var(--netra-space-2) var(--netra-space-5);
+}
+
+.netra-users__roles-hint {
+    font-size: 12.5px;
+    margin: 0 0 var(--netra-space-3);
+}
+
+.netra-users__state {
+    margin-top: var(--netra-space-4);
+    padding-top: var(--netra-space-4);
+    border-top: 1px solid var(--netra-border);
+}
+
+.netra-users__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+}
+
+/* Account and audit cells stack a primary line over a muted identifier line. */
+.netra-users .netra-table__primary,
+.netra-audit .netra-table__primary {
+    display: block;
+}
+
+.netra-users td .netra-muted,
+.netra-audit td .netra-muted {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+}
+
+.netra-users td,
+.netra-users th,
+.netra-audit td,
+.netra-audit th {
+    padding: var(--netra-space-2) var(--netra-space-3);
+}
+
+/* The trail carries badges and a change summary, so its cells stay tight. */
+.netra-audit .netra-badge {
+    padding: 2px var(--netra-space-1);
+    letter-spacing: 0.04em;
+}
+
+.netra-audit__time {
+    white-space: nowrap;
+}
+
+/* Long recorded values wrap inside the column rather than widening the page. */
+.netra-audit__summary {
+    max-width: 320px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.netra-audit__excerpt {
+    margin: var(--netra-space-3) 0 0;
+    padding: var(--netra-space-3);
+    background: var(--netra-surface-sunken);
+    border-left: 2px solid var(--netra-primary-border);
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+}
+
+.netra-audit__payload-label {
+    margin: 0 0 var(--netra-space-2);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--netra-text-muted);
+}
+
+.netra-audit__payload {
+    margin: 0 0 var(--netra-space-4);
+    padding: var(--netra-space-3);
+    background: var(--netra-surface-sunken);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+    font-family: var(--netra-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--netra-text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+.netra-audit__payload:last-of-type {
+    margin-bottom: var(--netra-space-3);
+}
+
+.netra-audit__actions,
+.netra-users__actions--page {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--netra-space-2);
+    margin-top: var(--netra-space-3);
+}
+
+/* Read-only Identity values shown for reference: never a posted form field. */
+.netra-input--readonly {
+    background: var(--netra-surface-sunken);
+    color: var(--netra-text-muted);
+    border-style: dashed;
+    cursor: default;
+}
+
+/* ---------------------------------------------------------------- print ---
+   A report is the one NETRA page meant to leave the screen. The shell, filters
+   and every control disappear, and the palette flips to ink-on-paper so an A4
+   or Letter printout stays readable without a client-side library. */
+
+@media print {
+    :root {
+        --netra-background: #ffffff;
+        --netra-surface: #ffffff;
+        --netra-surface-elevated: #f4f6f9;
+        --netra-surface-sunken: #f4f6f9;
+        --netra-border: #b6c0cd;
+        --netra-border-strong: #7d8896;
+        --netra-primary: #0b6e8a;
+        --netra-primary-strong: #085a70;
+        --netra-primary-dim: rgba(11, 110, 138, 0.12);
+        --netra-primary-border: rgba(11, 110, 138, 0.45);
+        --netra-on-primary: #ffffff;
+        --netra-text: #16202e;
+        --netra-text-strong: #000000;
+        --netra-text-muted: #35414f;
+        --netra-text-faint: #5a6675;
+        --netra-shadow: none;
+        --netra-shadow-lg: none;
+    }
+
+    body {
+        background: #ffffff;
+    }
+
+    .netra-sidebar,
+    .netra-topbar,
+    .netra-sidebar-toggle,
+    .netra-sidebar-backdrop,
+    .netra-skip-link,
+    .netra-breadcrumbs,
+    .netra-pageheader__actions,
+    .netra-report-toolbar,
+    .netra-report-card__actions,
+    .netra-report-card__foot,
+    .netra-filters,
+    .netra-pagination,
+    .netra-form__actions,
+    .netra-validation,
+    .netra-alert--success,
+    .netra-alert--danger {
+        display: none;
+    }
+
+    .netra-shell,
+    .netra-main,
+    .netra-content {
+        display: block;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        min-height: 0;
+    }
+
+    .netra-pageheader {
+        margin-bottom: var(--netra-space-4);
+    }
+
+    /* The document carries its own branded title, so the app page header is
+       screen chrome on the report document page. */
+    .netra-pageheader:has(~ .netra-doc) {
+        display: none;
+    }
+
+    .netra-doc {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-top: 3px solid #000000;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .netra-doc__section,
+    .netra-table,
+    .netra-chart {
+        break-inside: avoid;
+    }
+
+    .netra-doc__heading {
+        break-after: avoid;
+    }
+
+    .netra-doc a {
+        color: var(--netra-text-strong);
+        text-decoration: none;
+    }
+
+    .netra-card,
+    .netra-stat,
+    .netra-table th,
+    .netra-table td,
+    .netra-badge,
+    .netra-chip {
+        background: #ffffff;
+        color: var(--netra-text);
+        border-color: var(--netra-border);
+    }
+
+    .netra-table th {
+        background: #eef1f5;
+    }
+
+    .netra-chart__grid {
+        stroke: var(--netra-border);
+    }
+
+    .netra-chart__axis-label,
+    .netra-chart__bar-label,
+    .netra-chart__donut-label {
+        fill: var(--netra-text-muted);
+    }
+
+    .netra-chart__bar-track {
+        fill: #eef1f5;
+        stroke: var(--netra-border);
+    }
+
+    .netra-chart__point {
+        stroke: #ffffff;
+    }
+
+    .netra-chart__donut-track {
+        stroke: #eef1f5;
+    }
+
+    @page {
+        size: A4;
+        margin: 16mm;
+    }
+}
+
+/* ==========================================================================
+   Settings + Support (Phase 14)
+   Two stored display choices applied as body classes, the settings cards and
+   forms, and the help page. Built from existing NETRA tokens and components
+   only — no theme framework, no client-side code, no stored CSS.
+   ========================================================================== */
+
+/* Density rescales the spacing tokens once, on <body>. Every NETRA component sizes
+   itself from var(--netra-space-*), so one override re-flows the whole shell and no
+   rule needs a compact twin. */
+body.netra-density--compact {
+    --netra-space-1: 3px;
+    --netra-space-2: 6px;
+    --netra-space-3: 9px;
+    --netra-space-4: 12px;
+    --netra-space-5: 15px;
+    --netra-space-6: 18px;
+    --netra-space-8: 24px;
+}
+
+/* Reduced motion removes the theme's hover fades and the narrow-viewport drawer slide. */
+body.netra-motion--reduced *,
+body.netra-motion--reduced *::before,
+body.netra-motion--reduced *::after {
+    transition: none !important;
+    animation: none !important;
+}
+
+.netra-settings {
+    display: grid;
+    gap: var(--netra-space-4);
+    margin-top: var(--netra-space-4);
+}
+
+.netra-settings__form {
+    display: grid;
+    gap: var(--netra-space-4);
+    margin-top: var(--netra-space-4);
+}
+
+.netra-settings__cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--netra-space-4);
+}
+
+/* The card is the link, so the whole block is one focusable target. */
+.netra-settings-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--netra-space-2);
+    padding: var(--netra-space-4);
+    background: var(--netra-surface);
+    border: 1px solid var(--netra-border);
+    border-left: 3px solid var(--netra-primary-dim);
+    border-radius: var(--netra-radius-lg);
+    color: var(--netra-text);
+    text-decoration: none;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.netra-settings-card:hover,
+.netra-settings-card:focus-visible {
+    border-left-color: var(--netra-primary);
+    background: var(--netra-surface-elevated);
+}
+
+.netra-settings-card__title {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--netra-text-strong);
+}
+
+.netra-settings-card__title svg {
+    color: var(--netra-primary);
+    flex: 0 0 16px;
+}
+
+.netra-settings-card__text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--netra-text-muted);
+}
+
+.netra-settings-card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin-top: auto;
+    padding-top: var(--netra-space-2);
+    font-size: 12px;
+    color: var(--netra-text-faint);
+}
+
+.netra-settings__pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--netra-space-3);
+}
+
+@media (max-width: 720px) {
+    .netra-settings__pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* One labelled row per notification category: the switch and its current state. */
+.netra-settings__rows {
+    display: grid;
+    gap: var(--netra-space-2);
+}
+
+.netra-settings__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--netra-space-3);
+    padding: var(--netra-space-3);
+    background: var(--netra-surface-sunken);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+}
+
+.netra-settings__row-label {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-3);
+    min-width: 0;
+    font-size: 13px;
+    color: var(--netra-text-strong);
+}
+
+.netra-settings__row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--netra-space-2);
+    font-size: 11.5px;
+    color: var(--netra-text-faint);
+}
+
+.netra-settings__rules {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 2px;
+    font-size: 12.5px;
+    color: var(--netra-text-muted);
+}
+
+.netra-settings__note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--netra-text-muted);
+}
+
+/* Support page. */
+.netra-help {
+    display: grid;
+    gap: var(--netra-space-6);
+    margin-top: var(--netra-space-4);
+}
+
+.netra-help__section {
+    display: grid;
+    gap: var(--netra-space-3);
+    scroll-margin-top: var(--netra-space-6);
+}
+
+.netra-help__title {
+    display: flex;
+    align-items: center;
+    gap: var(--netra-space-2);
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--netra-text-strong);
+}
+
+.netra-help__title svg {
+    color: var(--netra-primary);
+    flex: 0 0 18px;
+}
+
+.netra-help__text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--netra-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.netra-help__list {
+    margin: 0;
+    padding-left: 1.15rem;
+    display: grid;
+    gap: var(--netra-space-1);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--netra-text-muted);
+}
+
+.netra-help__list strong {
+    color: var(--netra-text-strong);
+}
+
+/* CSS-only disclosure: the details element is the whole interaction. */
+.netra-help details {
+    background: var(--netra-surface-sunken);
+    border: 1px solid var(--netra-border);
+    border-radius: var(--netra-radius);
+}
+
+.netra-help details + details {
+    margin-top: var(--netra-space-2);
+}
+
+.netra-help summary {
+    cursor: pointer;
+    padding: var(--netra-space-3);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--netra-text-strong);
+    list-style-position: inside;
+}
+
+.netra-help details[open] summary {
+    border-bottom: 1px solid var(--netra-border);
+}
+
+.netra-help__answer {
+    padding: var(--netra-space-3);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--netra-text-muted);
+}
+
+.netra-help__answer a {
+    color: var(--netra-primary);
+}

@@ -1,0 +1,151 @@
+@using NETRA.Application.AI
+@using NETRA.Web.Models.ViewModels.Assistant
+@model AssistantViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "AI Assistant";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "AI Assistant", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "NETRA AI Assistant",
+    Subtitle = "Ask questions about authorized NETRA crime, case and analytical data."
+})
+
+<div class="netra-alert netra-alert--warning netra-assistant-disclaimer" role="note">
+    <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+    <div class="netra-alert__body">
+        <strong>Decision support &mdash; verification required.</strong>
+        Answers are generated only from authorized NETRA records retrieved by approved
+        queries. They never establish identity or guilt, may be incomplete, and must be
+        verified against the underlying case records.
+    </div>
+</div>
+
+@if (TempData["Netra.Error"] is string error)
+{
+    <div class="netra-alert netra-alert--danger" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">@error</div>
+    </div>
+}
+
+<div class="netra-assistant-layout">
+    <section class="netra-card netra-assistant-sessions" aria-label="Conversations">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Conversations</h2>
+            <span class="netra-badge netra-badge--neutral">@Model.Sessions.Count session(s)</span>
+        </div>
+        <div class="netra-card__body">
+            <form asp-controller="Assistant" asp-action="New" method="post" class="netra-assistant-new">
+                <button class="netra-btn netra-btn--primary" type="submit">New Conversation</button>
+            </form>
+
+            @if (Model.Sessions.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No conversations yet",
+                    Text = "Ask a question below to start your first assistant conversation.",
+                    Icon = NetraIcon.Assistant
+                })
+            }
+            else
+            {
+                <ul class="netra-record-list">
+                    @foreach (var summary in Model.Sessions)
+                    {
+                        <li class="netra-record-list__item">
+                            <a asp-controller="Assistant" asp-action="Index" asp-route-session="@summary.Id">
+                                @(string.IsNullOrWhiteSpace(summary.Title) ? "New conversation" : summary.Title)
+                            </a>
+                            <span class="netra-muted netra-record-list__aside">
+                                @summary.TotalMessages message(s) · @summary.StartedAt.ToString("dd MMM yyyy HH:mm") UTC
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+
+    <section class="netra-card netra-assistant-chat" aria-label="Conversation">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                @(Model.ActiveSession?.Title is { Length: > 0 } title ? title : "Conversation")
+            </h2>
+            @if (Model.HasConversation)
+            {
+                <span class="netra-badge netra-badge--primary">
+                    @Model.ActiveSession!.Messages.Count message(s)
+                </span>
+            }
+        </div>
+        <div class="netra-card__body">
+            @if (!Model.HasConversation)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No messages yet",
+                    Text = "Try: “Which district has the highest number of robbery cases?” or “Show theft cases from the last 30 days.”",
+                    Icon = NetraIcon.Assistant
+                })
+            }
+            else
+            {
+                <div class="netra-chat">
+                    @foreach (var message in Model.ActiveSession!.Messages)
+                    {
+                        <article class="netra-msg @(message.IsUser ? "netra-msg--user" : "netra-msg--assistant")">
+                            <div class="netra-msg__meta">
+                                <strong>@(message.IsUser ? "You" : "NETRA Assistant")</strong>
+                                <span class="netra-muted">
+                                    @message.CreatedAt.ToString("dd MMM yyyy HH:mm") UTC
+                                    @if (!message.IsUser && message.IntentLabel is { Length: > 0 } intent)
+                                    {
+                                        <text> · authorized query: @intent</text>
+                                    }
+                                    @if (!message.IsUser && message.ProviderName is { Length: > 0 } provider)
+                                    {
+                                        <text> · @provider</text>
+                                    }
+                                </span>
+                            </div>
+                            <div class="netra-msg__body">@message.Content</div>
+                        </article>
+                    }
+                </div>
+            }
+
+            <form asp-controller="Assistant" asp-action="Ask" method="post" class="netra-assistant-form">
+                <div asp-validation-summary="ModelOnly" class="netra-validation"></div>
+                <input type="hidden" asp-for="Ask.SessionId" />
+                <div class="netra-field">
+                    <label class="netra-label" asp-for="Ask.Question">Ask NETRA about crime trends, case patterns, or operational data</label>
+                    <textarea class="netra-input netra-assistant-input" asp-for="Ask.Question" rows="3"
+                              maxlength="@AssistantLimits.MaxQuestionLength"
+                              placeholder="Example: Which district has the highest number of robbery cases?"></textarea>
+                    <span class="netra-muted netra-field__hint">
+                        Up to @AssistantLimits.MaxQuestionLength characters. Questions are answered only from
+                        authorized NETRA records via approved queries.
+                    </span>
+                    <span asp-validation-for="Ask.Question" class="netra-field__error"></span>
+                </div>
+                <button class="netra-btn netra-btn--primary" type="submit">Send Query</button>
+            </form>
+
+            <p class="netra-muted netra-assistant-footnote">
+                AI-generated outputs should be verified by authorized personnel.
+            </p>
+        </div>
+    </section>
+</div>

@@ -1,0 +1,177 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Reports
+@model NETRA.Web.Models.ViewModels.Reports.GenerateReportViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Generate Report";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Reports", Url = "/reports" },
+        new() { Text = "Generate Report" }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Generate New Report",
+    Subtitle = "Produce a report from the data already recorded in NETRA. Every figure is read from the " +
+        "existing case, analytics, risk and alert services at the moment of generation — nothing is simulated."
+})
+
+<form asp-controller="Reports" asp-action="Generate" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-grid netra-grid--form">
+        <div class="netra-stack">
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Report))</span>
+                        Report content
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Type)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="Type">Report type</label>
+                        <select class="netra-select" asp-for="Type" name="Type">
+                            @foreach (var option in Model.TypeOptions)
+                            {
+                                <option value="@option.Value" selected="@(Model.Type == option.Value)">@option.Label</option>
+                            }
+                        </select>
+                        <p class="netra-field__hint">@Model.SelectedDescription</p>
+                        <span asp-validation-for="Type" class="netra-field__error"></span>
+                    </div>
+
+                    @if (Model.RequiresCase)
+                    {
+                        <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.CaseId)) ? "netra-field--invalid" : null)">
+                            <label class="netra-label" asp-for="CaseId">Case</label>
+                            <select class="netra-select" asp-for="CaseId" name="CaseId">
+                                <option value="">Select a case</option>
+                                @foreach (var option in Model.CaseOptions)
+                                {
+                                    <option value="@option.Id" selected="@(Model.CaseId == option.Id)">@option.CaseNumber</option>
+                                }
+                            </select>
+                            <p class="netra-field__hint">
+                                This report type summarises one case, so a case is required.
+                            </p>
+                            <span asp-validation-for="CaseId" class="netra-field__error"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="netra-field">
+                            <label class="netra-label" for="DistrictId">District</label>
+                            <select class="netra-select" id="DistrictId" name="DistrictId">
+                                <option value="">All districts</option>
+                                @foreach (var option in Model.Districts)
+                                {
+                                    <option value="@option.Id" selected="@(Model.DistrictId == option.Id)">@option.Label</option>
+                                }
+                            </select>
+                            <p class="netra-field__hint">Limits the report to one district. Leave empty for all.</p>
+                        </div>
+
+                        <div class="netra-field">
+                            <label class="netra-label" for="CrimeTypeId">Crime type</label>
+                            <select class="netra-select" id="CrimeTypeId" name="CrimeTypeId">
+                                <option value="">All crime types</option>
+                                @foreach (var option in Model.CrimeTypes)
+                                {
+                                    <option value="@option.Id" selected="@(Model.CrimeTypeId == option.Id)">@option.Label</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="netra-field">
+                            <label class="netra-label" for="Severity">Severity</label>
+                            <select class="netra-select" id="Severity" name="Severity">
+                                <option value="">All severities</option>
+                                @foreach (var severity in GenerateReportViewModel.SeverityOptions)
+                                {
+                                    <option value="@severity" selected="@(Model.Severity == severity)">@severity</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.DateFrom)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="DateFrom">Reporting period start</label>
+                        <input class="netra-input" asp-for="DateFrom" type="date" name="DateFrom"
+                               value="@(Model.DateFrom?.ToString("yyyy-MM-dd"))" />
+                        <p class="netra-field__hint">
+                            Defaults to @(Model.DefaultDateFrom.ToString("d MMM yyyy")) when left empty.
+                        </p>
+                        <span asp-validation-for="DateFrom" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.DateTo)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="DateTo">Reporting period end</label>
+                        <input class="netra-input" asp-for="DateTo" type="date" name="DateTo"
+                               value="@(Model.DateTo?.ToString("yyyy-MM-dd"))" />
+                        <p class="netra-field__hint">
+                            Defaults to @(Model.DefaultDateTo.ToString("d MMM yyyy")). Period used: @Model.PeriodLabel.
+                        </p>
+                        <span asp-validation-for="DateTo" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-stack">
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Assistant))</span>
+                        Analyst framing (optional)
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.AnalystObservations)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="AnalystObservations">Observations</label>
+                        <textarea class="netra-input netra-textarea" asp-for="AnalystObservations" name="AnalystObservations"
+                                  rows="10" maxlength="8000"
+                                  placeholder="Context an authorised reader should know when reviewing these figures."></textarea>
+                        <p class="netra-field__hint">
+                            Stored separately from the system-generated sections. The recorded figures themselves
+                            cannot be edited.
+                        </p>
+                        <span asp-validation-for="AnalystObservations" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="netra-card">
+                <div class="netra-card__body">
+                    <div class="netra-alert netra-alert--info">
+                        <div class="netra-alert__body">
+                            <p class="netra-alert__title">Data minimisation</p>
+                            <p>
+                                Generated reports carry case numbers, crime types, districts, severity, counts and
+                                analytical indicators. They never include passwords, security settings, national
+                                identity numbers, phone numbers, e-mail addresses or private home addresses.
+                                Private investigation notes are excluded.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="netra-form__actions netra-mt-4">
+                        <a class="netra-btn netra-btn--ghost" asp-controller="Reports" asp-action="Index">Cancel</a>
+                        <button type="submit" class="netra-btn netra-btn--primary">
+                            Generate report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

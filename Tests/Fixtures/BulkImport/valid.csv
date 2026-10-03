@@ -1,0 +1,4 @@
+CaseNumber,Title,CrimeType,IncidentDate,Severity,Status,Description,District,PoliceStation,Address,Latitude,Longitude
+BX-9001,Synthetic warehouse theft,THF,2026-01-12,High,Open,Synthetic narrative for automated tests only,CD,CHQ,1 Example Way,-22.9,47.1
+BX-9002,Synthetic street robbery,ASL,2026-02-03 14:30,Medium,UnderInvestigation,,ND,SHQ,2 Sample Street,,
+BX-9003,Synthetic vehicle theft,THF,2026-02-19,Low,PendingReview,,,,,,

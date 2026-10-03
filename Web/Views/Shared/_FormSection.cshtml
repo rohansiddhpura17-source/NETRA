@@ -1,0 +1,18 @@
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@model FormSectionModel
+
+<section class="netra-formsection">
+    <h3 class="netra-formsection__title">@Model.Title</h3>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <p class="netra-formsection__hint">@Model.Hint</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ContentViewDataKey)
+        && ViewData[Model.ContentViewDataKey!] is HtmlString content)
+    {
+        @content
+    }
+</section>

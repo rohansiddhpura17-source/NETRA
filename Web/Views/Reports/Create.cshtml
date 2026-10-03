@@ -1,0 +1,33 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Reports
+@model NETRA.Web.Models.ViewModels.Reports.AnalystReportFormViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "New Analyst Report";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Reports", Url = "/reports" },
+        new() { Text = "New Analyst Report" }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "New Analyst Report",
+    Subtitle = "Author a briefing in your own words. It is stored as analyst authored and stays clearly " +
+        "separate from system-generated reports."
+})
+
+<form asp-controller="Reports" asp-action="Create" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    @await Html.PartialAsync("_ReportForm", Model)
+</form>

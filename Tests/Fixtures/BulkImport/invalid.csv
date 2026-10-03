@@ -1,0 +1,14 @@
+CaseNumber,Title,CrimeType,IncidentDate,Severity,Status,Description,District,PoliceStation,Address,Latitude,Longitude
+BX-9101,Missing crime type,,2026-01-12,High,Open,,,CHQ,,,
+BX-9102,Unknown crime type,XX9,2026-01-12,High,Open,Test,CD,CHQ,,,
+BX-9103,Bad incident date,THF,12/01/2026,High,Open,Test,CD,CHQ,,,
+BX-9104,Future incident date,THF,2099-01-01,High,Open,Test,CD,CHQ,,,
+BX-9105,Unknown status,THF,2026-01-12,High,NotAStatus,Test,CD,CHQ,,,
+BX-9106,Unknown severity,THF,2026-01-12,Catastrophic,Open,Test,CD,CHQ,,,
+BX-9107,Unknown district,THF,2026-01-12,High,Open,Test,ZZ9,CHQ,,,
+BX-9108,Station in another district,THF,2026-01-12,High,Open,Test,CD,SHQ,,,
+BX-9109,Latitude out of range,THF,2026-01-12,High,Open,Test,CD,CHQ,Main Road,999,47.1
+BX-9110,Longitude out of range,THF,2026-01-12,High,Open,Test,CD,CHQ,Main Road,-22.9,999
+BX-9111,Only one coordinate,THF,2026-01-12,High,Open,Test,CD,CHQ,Main Road,-22.9,
+BX-9112,,THF,2026-01-12,High,Open,Test,CD,CHQ,,,
+,,,,,,A completely empty row,,,,,

@@ -1,0 +1,285 @@
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Analytics
+@using NETRA.Web.Models.ViewModels.Risk
+@model NETRA.Web.Models.ViewModels.Risk.RiskViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Risk & Anomaly Analysis";
+
+    string Hidden(string name, string? value) =>
+        $"<input type=\"hidden\" name=\"{name}\" value=\"{System.Net.WebUtility.HtmlEncode(value)}\" />";
+
+    // IHtmlContent.ToString() is NOT the markup — serialize the antiforgery token.
+    var tokenWriter = new System.IO.StringWriter();
+    Html.AntiForgeryToken().WriteTo(tokenWriter, System.Text.Encodings.Web.HtmlEncoder.Default);
+
+    var assessForm = new HtmlString(
+        "<form class=\"netra-inline-form\" method=\"post\" action=\"/risk/assess\">" +
+        tokenWriter.ToString() +
+        Hidden("DateFrom", Model.Filter.DateFrom?.ToString("yyyy-MM-dd")) +
+        Hidden("DateTo", Model.Filter.DateTo?.ToString("yyyy-MM-dd")) +
+        Hidden("DistrictId", Model.Filter.DistrictId?.ToString()) +
+        Hidden("CrimeTypeId", Model.Filter.CrimeTypeId?.ToString()) +
+        Hidden("Severity", Model.Filter.Severity) +
+        "<button type=\"submit\" class=\"netra-btn netra-btn--primary netra-btn--sm\">" +
+        "<span class=\"netra-btn__icon\">" + NetraIconPaths.Render(NetraIcon.Shield) + "</span>" +
+        "Run Assessment</button></form>");
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Risk & Anomaly Analysis", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Risk & Anomaly Analysis",
+    Subtitle = "Analytical assessment of regional crime activity and automated pattern detection. " +
+        "Scores are analytical indicators, not guaranteed predictions.",
+    Actions = assessForm
+})
+
+@* Server-rendered GET filters — no client-side JavaScript. *@
+<form class="netra-filters netra-filters--band" id="risk-filters"
+      asp-controller="Risk" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateFrom">Date from</label>
+        <input class="netra-input" type="date" id="DateFrom" name="DateFrom"
+               value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateTo">Date to</label>
+        <input class="netra-input" type="date" id="DateTo" name="DateTo"
+               value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DistrictId">District</label>
+        <select class="netra-select" id="DistrictId" name="DistrictId">
+            <option value="">All districts</option>
+            @foreach (var district in Model.Lookups.Districts)
+            {
+                <option value="@district.Id" selected="@(Model.Filter.DistrictId == district.Id)">@district.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="CrimeTypeId">Crime type</label>
+        <select class="netra-select" id="CrimeTypeId" name="CrimeTypeId">
+            <option value="">All crime types</option>
+            @foreach (var type in Model.Lookups.CrimeTypes)
+            {
+                <option value="@type.Id" selected="@(Model.Filter.CrimeTypeId == type.Id)">@type.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Severity">Severity</label>
+        <select class="netra-select" id="Severity" name="Severity">
+            <option value="">All severities</option>
+            @foreach (var severity in AnalyticsFilterViewModel.SeverityOptions)
+            {
+                <option value="@severity" selected="@(Model.Filter.Severity == severity)">@severity</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Risk" asp-action="Index">Clear filters</a>
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+    </div>
+</form>
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+@if (ViewContext.ModelState["DateTo"]?.Errors.Count > 0)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">
+        @foreach (var error in ViewContext.ModelState["DateTo"]!.Errors)
+        {
+            @error.ErrorMessage
+            <br />
+        }
+    </div>
+}
+
+<div class="netra-grid netra-grid--stats netra-mt-4">
+    @foreach (var card in Model.SummaryCards)
+    {
+        @await Html.PartialAsync("_StatCard", card)
+    }
+</div>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+            Area Risk Analysis
+        </h2>
+        <span class="netra-badge netra-badge--neutral">Window @Model.WindowLabel · vs @Model.ComparisonLabel</span>
+    </div>
+    <div class="netra-card__body">
+        @if (!Model.HasCases)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = "No risk assessments available",
+                Text = "No risk assessments are available for the selected period. Recorded case data is required before analytical indicators can be produced.",
+                Icon = NetraIcon.Shield
+            })
+        }
+        else
+        {
+            <div class="netra-tablewrap">
+            <table class="netra-table netra-table--numeric netra-table--compact netra-risk-table">
+                <caption class="netra-visually-hidden">
+                    Area risk analytical indicators for @Model.WindowLabel, compared with @Model.ComparisonLabel.
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Area</th>
+                        <th scope="col">District</th>
+                        <th scope="col">Crime Count</th>
+                        <th scope="col">Recent Activity</th>
+                        <th scope="col">Historical Trend</th>
+                        <th scope="col">Risk Score</th>
+                        <th scope="col">Risk Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <th scope="row" class="netra-table__cell--text">@row.DistrictName</th>
+                            <td class="netra-table__cell--text">@row.DistrictCode</td>
+                            <td>@row.CrimeCount</td>
+                            <td>
+                                @if (row.Sparkline.Value is { Length: > 0 })
+                                {
+                                    @row.Sparkline
+                                }
+                                else
+                                {
+                                    <span class="netra-muted">—</span>
+                                }
+                            </td>
+                            <td><span class="netra-risk-trend netra-risk-trend--@ToneClass(row.TrendTone)">@row.TrendText</span></td>
+                            <td><strong>@row.ScoreText</strong></td>
+                            <td>@await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = row.LevelLabel,
+                                    Tone = row.LevelTone
+                                })</td>
+                        </tr>
+                        <tr class="netra-risk-table__explanation">
+                            <td colspan="7"><span class="netra-muted">@row.Explanation</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        }
+    </div>
+    <div class="netra-card__footer">
+        <span class="netra-muted">
+            ⚠ Risk scores are analytical indicators and do not represent guaranteed predictions.
+        </span>
+    </div>
+</div>
+
+<div class="netra-mt-4">
+    <div class="netra-card__header netra-card__header--standalone">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon netra-card__title-icon--warning">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+            Detected Anomalies
+        </h2>
+        <span class="netra-badge netra-badge--neutral">@Model.Anomalies.Count detected</span>
+    </div>
+
+    @if (!Model.HasCases)
+    {
+        <div class="netra-card">
+            <div class="netra-card__body">
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "Nothing to compare",
+                    Text = "Anomaly detection compares the selected window with the preceding period of equal length. No case data is available for either.",
+                    Icon = NetraIcon.Inbox
+                })
+            </div>
+        </div>
+    }
+    else if (Model.Anomalies.Count == 0)
+    {
+        <div class="netra-card">
+            <div class="netra-card__body">
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No unusual patterns detected",
+                    Text = "No activity in the selected window deviated from its comparison period beyond the documented detection thresholds.",
+                    Icon = NetraIcon.Shield
+                })
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="netra-grid netra-grid--2">
+            @foreach (var anomaly in Model.Anomalies)
+            {
+                <div class="netra-card netra-anomaly">
+                    <div class="netra-anomaly__icon netra-anomaly__icon--@ToneClass(anomaly.SeverityTone)">
+                        @Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))
+                    </div>
+                    <div class="netra-anomaly__body">
+                        <div class="netra-anomaly__heading">
+                            <h3 class="netra-anomaly__title">@anomaly.Title</h3>
+                            @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = anomaly.SeverityLabel,
+                                    Tone = anomaly.SeverityTone
+                                })
+                        </div>
+                        <p class="netra-anomaly__description">@anomaly.Description</p>
+                        <dl class="netra-anomaly__facts">
+                            <div>
+                                <dt>@anomaly.MetricLabel</dt>
+                                <dd class="netra-anomaly__metric netra-anomaly__metric--@ToneClass(anomaly.SeverityTone)">@anomaly.MetricValue</dd>
+                            </div>
+                            <div>
+                                <dt>Detection kind</dt>
+                                <dd>@anomaly.TypeLabel</dd>
+                            </div>
+                            <div>
+                                <dt>Area</dt>
+                                <dd>@anomaly.DistrictName</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@functions {
+    private static string ToneClass(NetraTone tone) => tone switch
+    {
+        NetraTone.Danger => "danger",
+        NetraTone.Warning => "warning",
+        NetraTone.Success => "success",
+        NetraTone.Info => "info",
+        NetraTone.Primary => "primary",
+        _ => "neutral"
+    };
+}

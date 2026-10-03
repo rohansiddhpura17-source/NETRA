@@ -1,0 +1,42 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportUploadForm
+
+<form asp-controller="BulkImport" asp-action="Upload" method="post"
+      enctype="multipart/form-data" class="netra-stack netra-import-form">
+    <div asp-validation-summary="ModelOnly" class="netra-validation"></div>
+
+    <div class="netra-field">
+        <label class="netra-label" asp-for="Name">Import name</label>
+        <input class="netra-input" asp-for="Name" type="text" maxlength="@BulkImportLimits.MaxJobNameLength"
+               placeholder="For example: October district case register" />
+        <span class="netra-field__hint">
+            Named so you can recognise this import in your recent list. Only you can continue it.
+        </span>
+        <span asp-validation-for="Name" class="netra-field__error"></span>
+    </div>
+
+    <div class="netra-field">
+        <label class="netra-label" asp-for="Description">Description (optional)</label>
+        <textarea class="netra-input" asp-for="Description" rows="3" maxlength="4000"
+                  placeholder="What this file covers, and where it came from."></textarea>
+        <span asp-validation-for="Description" class="netra-field__error"></span>
+    </div>
+
+    <div class="netra-field">
+        <label class="netra-label" asp-for="File">CSV file</label>
+        <input class="netra-input" asp-for="File" type="file" accept=".csv" />
+        <span class="netra-field__hint">
+            Comma-separated values, one header row and up to
+            @BulkImportLimits.MaxDataRows.ToString("N0") data rows
+            (@(BulkImportLimits.MaxFileBytes / (1024 * 1024)) MB maximum).
+            The file is stored server-side and parsed by NETRA; nothing in it is executed.
+        </span>
+        <span asp-validation-for="File" class="netra-field__error"></span>
+    </div>
+
+    <div class="netra-import-form__actions">
+        <button class="netra-btn netra-btn--primary" type="submit">Upload and validate</button>
+        <a class="netra-btn netra-btn--ghost" asp-controller="BulkImport" asp-action="Index">Cancel</a>
+    </div>
+</form>

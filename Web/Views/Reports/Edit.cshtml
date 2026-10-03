@@ -1,0 +1,33 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Reports
+@model NETRA.Web.Models.ViewModels.Reports.AnalystReportFormViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Edit Analyst Report";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Reports", Url = "/reports" },
+        new() { Text = "Edit Analyst Report" }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Edit Analyst Report",
+    Subtitle = "Only analyst-authored reports are editable. System-generated facts stay immutable, so a " +
+        "recorded figure can never be overwritten by hand."
+})
+
+<form asp-controller="Reports" asp-action="Edit" asp-route-id="@Model.Id" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    @await Html.PartialAsync("_ReportForm", Model)
+</form>

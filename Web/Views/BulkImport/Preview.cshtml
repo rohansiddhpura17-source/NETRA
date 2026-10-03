@@ -1,0 +1,194 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportPreviewViewModel
+@{
+    Layout = "_Layout";
+    var preview = Model.Preview;
+    var job = preview.Job;
+    ViewData["Title"] = $"Preview — {job.Name}";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Data", Url = "/BulkImport" },
+        new() { Text = "Bulk Data Import", Url = "/BulkImport" },
+        new() { Text = "Preview", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Preview before importing",
+    Subtitle = "These rows are what the import will create. They are not in the case register yet: nothing is stored until you press Import."
+})
+
+<div class="netra-alert netra-alert--warning" role="note">
+    <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+    <div class="netra-alert__body">
+        <strong>This is a preview, not a record.</strong>
+        Opening this page imported nothing. Review the rows below, then confirm the import or
+        cancel it.
+    </div>
+</div>
+
+@await Html.PartialAsync("_JobSummary", job)
+
+<section class="netra-card" aria-label="Rows that will be imported">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">Accepted rows</h2>
+        <span class="netra-badge netra-badge--primary">@preview.ValidRows.ToString("N0")</span>
+    </div>
+    <div class="netra-card__body">
+        @if (preview.Rows.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = "Nothing to import",
+                Text = "No row in this file passed validation, so the import would create no cases.",
+                Icon = NetraIcon.Inbox
+            })
+        }
+        else
+        {
+            <div class="netra-tablewrap netra-import-preview-scroll">
+                <table class="netra-table netra-import-preview">
+                    <caption class="netra-visually-hidden">
+                        Rows the import will create, shown in the documented column order
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            @foreach (var column in Model.ColumnNames)
+                            {
+                                <th scope="col" class="netra-mono">@column</th>
+                            }
+                            <th scope="col">Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in preview.Rows)
+                        {
+                            <tr>
+                                <td class="is-numeric">@row.RowNumber</td>
+                                @if (row.CellsUnavailable)
+                                {
+                                    <td colspan="@(Model.ColumnNames.Count + 1)" class="netra-muted">
+                                        The stored row text could not be rebuilt, so its values are
+                                        not shown.
+                                    </td>
+                                }
+                                else
+                                {
+                                    @foreach (var cell in row.Cells)
+                                    {
+                                        <td>@(string.IsNullOrWhiteSpace(cell) ? "—" : cell)</td>
+                                    }
+                                }
+                                <td>
+                                    @await Html.PartialAsync(
+                                        "_StatusBadge", BulkImportStatusUi.RowBadge(row.Status))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (preview.MoreRowsBeyondPreview)
+            {
+                <p class="netra-muted netra-import-preview__footnote">
+                    Showing the first @preview.Rows.Count of @preview.ValidRows.ToString("N0")
+                    accepted rows. The remaining rows are already validated and will be imported
+                    with the rest; the limit is on display, not on the import.
+                </p>
+            }
+        }
+    </div>
+</section>
+
+@if (preview.DuplicateRows > 0 || preview.InvalidRows > 0)
+{
+    <section class="netra-card" aria-label="Rows held back">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Rows this import will not create</h2>
+        </div>
+        <div class="netra-card__body">
+            <p class="netra-import-holdback">
+                <span>
+                    <strong>@preview.InvalidRows.ToString("N0")</strong> rejected
+                </span>
+                <span>
+                    <strong>@preview.DuplicateRows.ToString("N0")</strong> duplicate
+                </span>
+                <span class="netra-muted">
+                    of @preview.TotalRows.ToString("N0") rows read
+                </span>
+            </p>
+            <p class="netra-muted">
+                Duplicate case numbers are skipped, never overwritten: an existing NETRA case
+                keeps its records exactly as they are. Rejected rows are left out and listed on
+                the validation page.
+            </p>
+            @if (preview.Issues.Count > 0)
+            {
+                <ul class="netra-import-holdback__list">
+                    @foreach (var issue in preview.Issues.Take(10))
+                    {
+                        <li>
+                            <span class="netra-mono">
+                                @(issue.RowNumber == 0 ? "File" : $"Row {issue.RowNumber}")
+                            </span>
+                            @issue.Field &mdash; @issue.Message
+                        </li>
+                    }
+                </ul>
+                @if (preview.IssuesTruncated)
+                {
+                    <p class="netra-muted">
+                        More problems are recorded against this import than shown here.
+                    </p>
+                }
+            }
+        </div>
+    </section>
+}
+
+<section class="netra-card netra-import-actions" aria-label="Confirm or cancel">
+    <div class="netra-card__body">
+        @if (job.CanImport)
+        {
+            <form asp-controller="BulkImport" asp-action="Import" asp-route-id="@job.Id"
+                  method="post" class="netra-import-confirm">
+                <button class="netra-btn netra-btn--primary netra-btn--lg" type="submit">
+                    Import @preview.ValidRows.ToString("N0") case(s)
+                </button>
+                <span class="netra-muted netra-import-confirm__note">
+                    Written in a single transaction. If anything fails, nothing is imported.
+                </span>
+            </form>
+        }
+        else
+        {
+            <p class="netra-alert netra-alert--warning" role="note">
+                <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                <span class="netra-alert__body">
+                    @(job.ImportBlockedBecause ?? "This import cannot be run from the preview page.")
+                </span>
+            </p>
+        }
+
+        <form asp-controller="BulkImport" asp-action="Cancel" asp-route-id="@job.Id" method="post">
+            <button class="netra-btn netra-btn--ghost" type="submit">Cancel this import</button>
+        </form>
+
+        <a class="netra-btn netra-btn--outline"
+           asp-controller="BulkImport" asp-action="Validate" asp-route-id="@job.Id">
+            Back to validation
+        </a>
+        <a class="netra-btn netra-btn--ghost" asp-controller="BulkImport" asp-action="Index">
+            Back to Bulk Import
+        </a>
+    </div>
+</section>

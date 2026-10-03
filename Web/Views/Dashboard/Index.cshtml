@@ -1,0 +1,225 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Services.Charts
+@model NETRA.Web.Models.ViewModels.Dashboard.DashboardViewModel
+@inject ChartRendererRegistry Charts
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Dashboard";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Dashboard", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Intelligence Dashboard",
+    Subtitle = $"Recorded crime overview. Trend period: {Model.PeriodLabel}.",
+    Actions = (HtmlString)Html.Raw(
+        "<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/reports\">" +
+        $"<span>{NetraIconPaths.Render(NetraIcon.Report)}</span>Export Report</a>")
+})
+
+<div class="netra-grid netra-grid--stats netra-mt-4">
+    @foreach (var card in Model.StatCards)
+    {
+        @await Html.PartialAsync("_StatCard", card)
+    }
+</div>
+
+<div class="netra-grid netra-grid--form netra-mt-4">
+    <div class="netra-stack">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Analytics))</span>
+                    Crime Trend Analysis (Last 12 Months)
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.PeriodLabel</span>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.TrendChart is { } trend)
+                {
+                    @Charts.Render(ChartKind.Line, trend)
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No trend data available",
+                        Text = "No crime records are available for the selected period.",
+                        Icon = NetraIcon.Inbox
+                    })
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-stack">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                    High-Risk Areas
+                </h2>
+                <span class="netra-badge netra-badge--warning">@Model.Data.HighRiskAreaCount Analytical Indicator</span>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.HighRiskAreas.Count > 0)
+                {
+                    <div class="netra-tablewrap">
+                        <table class="netra-table netra-table--numeric netra-table--compact">
+                            <caption class="netra-visually-hidden">Districts ranked by the highest recorded risk score</caption>
+                            <thead>
+                            <tr>
+                                <th scope="col">District</th>
+                                <th scope="col">Risk Score</th>
+                                <th scope="col">Level</th>
+                                <th scope="col" class="is-numeric">Cases</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var area in Model.HighRiskAreas)
+                            {
+                                <tr>
+                                    <td class="netra-table__primary">@area.DistrictName</td>
+                                    <td>@area.MaximumScore</td>
+                                    <td>
+                                        <span class="netra-badge netra-badge--danger">@area.RiskLevel</span>
+                                    </td>
+                                    <td class="is-numeric">@area.AssessedCaseCount</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No high-risk districts recorded",
+                        Text = "No risk assessments meeting the high-risk threshold have been recorded yet.",
+                        Icon = NetraIcon.Map
+                    })
+                }
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Bell))</span>
+                    Recent Alerts
+                </h2>
+                <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                   asp-controller="Alerts" asp-action="Index">View All</a>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.RecentAlerts.Count > 0)
+                {
+                    <div class="netra-tablewrap">
+                        <table class="netra-table netra-table--numeric netra-table--compact">
+                            <caption class="netra-visually-hidden">Five most recent active alerts</caption>
+                            <thead>
+                            <tr>
+                                <th scope="col">Alert</th>
+                                <th scope="col">Severity</th>
+                                <th scope="col">Raised</th>
+                                <th scope="col">Case</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var alert in Model.RecentAlerts)
+                            {
+                                <tr>
+                                    <td class="netra-table__primary">@alert.Title</td>
+                                    <td>
+                                        <span class="netra-badge netra-badge--@alert.SeverityTone.ToString().ToLowerInvariant()">@alert.Severity</span>
+                                    </td>
+                                    <td>@alert.CreatedAt</td>
+                                    <td>
+                                        @if (alert.CaseId is { } caseId && alert.CaseNumber is { } caseNumber)
+                                        {
+                                            <a asp-controller="Cases" asp-action="Details" asp-route-id="@caseId">@caseNumber</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="netra-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No active alerts",
+                        Text = "There are no unresolved alerts at this time.",
+                        Icon = NetraIcon.Bell
+                    })
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="netra-grid netra-grid--2 netra-mt-4">
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                Distribution by Type
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            @if (Model.DistributionChart is { } distribution)
+            {
+                @Charts.Render(ChartKind.Donut, distribution)
+            }
+            else
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No distribution data",
+                    Text = "No crime records are available for the selected period.",
+                    Icon = NetraIcon.Inbox
+                })
+            }
+        </div>
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+                District Comparison
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            @if (Model.DistrictChart is { } districts)
+            {
+                @Charts.Render(ChartKind.Bar, districts)
+            }
+            else
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No district data",
+                    Text = "No located crime records are available for the selected period.",
+                    Icon = NetraIcon.Map
+                })
+            }
+        </div>
+    </div>
+</div>

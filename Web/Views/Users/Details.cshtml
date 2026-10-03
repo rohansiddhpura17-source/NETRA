@@ -1,0 +1,147 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@model NETRA.Web.Models.ViewModels.Users.UserDetailsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Model.FullName;
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "User Management", Url = "/Users" },
+        new() { Text = Model.FullName, Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = Model.FullName,
+    Subtitle = "Account " + Model.User.UserName + ". NETRA shows the profile, role membership and " +
+        "account state an administrator needs; credential material held by Identity " +
+        "(password hash, security stamp, tokens) is never read or displayed.",
+    Actions = (HtmlString)Html.Raw(
+        "<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/Users\">Back to accounts</a> " +
+        $"<a class=\"netra-btn netra-btn--primary netra-btn--sm\" href=\"/Users/Edit/{Model.User.Id}\">" +
+        $"<span class=\"netra-btn__icon\">{NetraIconPaths.Render(NetraIcon.Sliders)}</span>Edit account</a>")
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+<div class="netra-users__detail">
+    <section class="netra-card" aria-label="Account details">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                Account
+            </h2>
+            @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+            {
+                Text = Model.StatusLabel,
+                Tone = Model.StatusTone
+            })
+        </div>
+        <div class="netra-card__body">
+            @if (Model.IsBlocked)
+            {
+                <div class="netra-alert netra-alert--warning netra-mb-4" role="status">
+                    @Model.BlockedReason
+                </div>
+            }
+
+            <dl class="netra-facts">
+                <div><dt>Username</dt><dd class="netra-mono">@Model.User.UserName</dd></div>
+                <div><dt>Full name</dt><dd>@Model.FullName</dd></div>
+                <div><dt>Email</dt><dd>@Model.EmailOrDash</dd></div>
+                <div><dt>Email confirmed</dt><dd>@(Model.User.EmailConfirmed ? "Yes" : "No")</dd></div>
+                <div><dt>Phone</dt><dd>@Model.PhoneOrDash</dd></div>
+                <div><dt>Badge number</dt><dd class="netra-mono">@Model.BadgeOrDash</dd></div>
+                <div><dt>Rank</dt><dd>@Model.RankOrDash</dd></div>
+                <div><dt>Created</dt><dd>@Model.CreatedAtText UTC</dd></div>
+                <div><dt>Last recorded sign-in</dt><dd>@(Model.LastLoginText is { } login ? login + " UTC" : "Never")</dd></div>
+                @if (Model.LockoutText is { } lockout)
+                {
+                    <div><dt>Locked out until</dt><dd>@lockout UTC</dd></div>
+                }
+            </dl>
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="Roles and access">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                Roles &amp; access
+            </h2>
+            @if (Model.User.IsAdministrator)
+            {
+                <span class="netra-badge netra-badge--primary">Administrator</span>
+            }
+        </div>
+        <div class="netra-card__body">
+            @if (Model.User.Roles.Count == 0)
+            {
+                <p class="netra-muted">
+                    No roles are assigned. The account can sign in but no NETRA page authorises it.
+                </p>
+            }
+            else
+            {
+                <div class="netra-users__roles-list">
+                    @foreach (var role in Model.User.Roles)
+                    {
+                        <span class="netra-badge netra-badge--neutral">@role</span>
+                    }
+                </div>
+                <p class="netra-muted netra-mt-3">
+                    Roles are granted through Identity and checked by NETRA's authorisation
+                    policies on every request.
+                </p>
+            }
+
+            <div class="netra-users__state">
+                @* Account state changes are POST-only and carry an anti-forgery token. *@
+                @if (Model.User.IsCurrentActor)
+                {
+                    <p class="netra-muted">
+                        This is the account you are signed in with. NETRA refuses to deactivate it
+                        while it is in use, so use another administrator account for that.
+                    </p>
+                }
+                else if (Model.IsDeactivated)
+                {
+                    <form class="netra-inline-form" asp-controller="Users" asp-action="Activate"
+                          asp-route-id="@Model.User.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">
+                            Activate account
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form class="netra-inline-form" asp-controller="Users" asp-action="Deactivate"
+                          asp-route-id="@Model.User.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="netra-btn netra-btn--danger netra-btn--sm">
+                            Deactivate account
+                        </button>
+                    </form>
+                    <p class="netra-muted">
+                        Deactivating refuses future sign-ins for this account. It does not delete the
+                        account or its recorded activity, and it can be reversed here.
+                    </p>
+                }
+            </div>
+        </div>
+    </section>
+</div>

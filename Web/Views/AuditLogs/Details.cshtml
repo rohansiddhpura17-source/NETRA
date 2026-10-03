@@ -1,0 +1,102 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@model NETRA.Web.Models.ViewModels.AuditLogs.AuditLogDetailsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Audit Entry";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "Audit Logs", Url = "/AuditLogs" },
+        new() { Text = "Entry detail", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = $"{Model.ActionLabel} — {Model.EntityLabel}",
+    Subtitle = "One entry of the append-only audit trail, shown exactly as it was written. " +
+        "Payload text is displayed as plain text: nothing recorded here is interpreted as markup."
+})
+
+<div class="netra-audit__detail">
+    <section class="netra-card" aria-label="Entry summary">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                Entry
+            </h2>
+            <span class="netra-badge netra-badge--primary">@Model.ActionLabel</span>
+        </div>
+        <div class="netra-card__body">
+            <dl class="netra-facts">
+                <div><dt>Recorded at</dt><dd>@Model.TimestampText</dd></div>
+                <div><dt>Actor</dt><dd>@Model.ActorLabel</dd></div>
+                <div><dt>Actor username</dt><dd class="netra-mono">@Model.ActorUserName</dd></div>
+                <div><dt>Actor id</dt><dd class="netra-mono">@Model.Entry.ActorUserId</dd></div>
+                <div><dt>Record type</dt><dd>@Model.EntityLabel</dd></div>
+                <div><dt>Record id</dt><dd class="netra-mono">@Model.Entry.EntityId</dd></div>
+                <div><dt>Field</dt><dd>@Model.PropertyOrDash</dd></div>
+                <div><dt>Origin</dt>
+                    <dd>@(Model.Entry.IsSystemAction ? "System action" : "User action")</dd>
+                </div>
+            </dl>
+            <p class="netra-audit__excerpt">@Model.Summary</p>
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="Recorded values">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+                Recorded values
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            <h3 class="netra-audit__payload-label">Previous value</h3>
+            <pre class="netra-audit__payload">@Model.OldValuesText</pre>
+
+            <h3 class="netra-audit__payload-label">New value</h3>
+            <pre class="netra-audit__payload">@Model.NewValuesText</pre>
+
+            <h3 class="netra-audit__payload-label">User agent</h3>
+            <pre class="netra-audit__payload">@Model.UserAgentText</pre>
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="Request context">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                Request context
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            <dl class="netra-facts">
+                <div><dt>Entry id</dt><dd class="netra-mono">@Model.Entry.Id</dd></div>
+                <div><dt>Correlation id</dt><dd class="netra-mono">@Model.CorrelationOrDash</dd></div>
+                <div><dt>Session id</dt><dd class="netra-mono">@Model.SessionOrDash</dd></div>
+                <div><dt>IP address</dt><dd class="netra-mono">@Model.IpOrDash</dd></div>
+            </dl>
+            <p class="netra-muted">
+                Credentials, password hashes, security stamps and tokens are never written to the
+                trail, so there is nothing to conceal on this page.
+            </p>
+            <div class="netra-audit__actions">
+                <a class="netra-btn netra-btn--outline netra-btn--sm"
+                   asp-controller="AuditLogs" asp-action="Index">Back to the trail</a>
+                @if (Model.Entry.EntityType == "Account")
+                {
+                    <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                       asp-controller="Users" asp-action="Details" asp-route-id="@Model.Entry.EntityId">
+                        Open this account
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+</div>

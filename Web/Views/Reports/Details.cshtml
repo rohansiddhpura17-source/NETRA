@@ -1,0 +1,320 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Services.Charts
+@using NETRA.Web.Models.ViewModels.Reports
+@model NETRA.Web.Models.ViewModels.Reports.ReportDocumentViewModel
+@inject ChartRendererRegistry Charts
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Report";
+    var document = Model.Document;
+
+    // IHtmlContent.ToString() is NOT the markup — serialise the antiforgery token.
+    var tokenWriter = new System.IO.StringWriter();
+    Html.AntiForgeryToken().WriteTo(tokenWriter, System.Text.Encodings.Web.HtmlEncoder.Default);
+    var tokenMarkup = tokenWriter.ToString();
+
+    var canArchive = Model.CanManage && document.Status != NETRA.Domain.Enums.ReportStatus.Archived;
+    var canEdit = Model.CanManage
+        && document.Source == NETRA.Domain.Enums.ReportSource.AnalystAuthored
+        && document.Status != NETRA.Domain.Enums.ReportStatus.Archived;
+
+    var archiveForm = canArchive
+        ? "<form class=\"netra-inline-form\" method=\"post\" action=\"/reports/archive/" + document.Id + "\">" +
+          tokenMarkup +
+          "<button type=\"submit\" class=\"netra-btn netra-btn--ghost netra-btn--sm\">Archive</button></form>"
+        : string.Empty;
+
+    var editLink = canEdit
+        ? "<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/reports/edit/" + document.Id + "\">" +
+          $"<span class=\"netra-btn__icon\">{NetraIconPaths.Render(NetraIcon.Settings)}</span>Edit report</a>"
+        : string.Empty;
+
+    var exportLink =
+        "<a class=\"netra-btn netra-btn--primary netra-btn--sm\" href=\"/reports/export/" + document.Id + "\">" +
+        $"<span class=\"netra-btn__icon\">{NetraIconPaths.Render(NetraIcon.Report)}</span>Export CSV</a>";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Reports", Url = "/reports" },
+        new() { Text = document.Title }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Report Document",
+    Subtitle = "Server-rendered report. Use your browser's print command to produce a paper or PDF copy.",
+    Actions = (HtmlString)Html.Raw(exportLink + editLink + archiveForm)
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+<article class="netra-doc netra-doc--@Model.Accent.ToString().ToLowerInvariant()">
+    <header class="netra-doc__header">
+        <div class="netra-doc__brand">
+            <span class="netra-doc__mark">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+            <span>
+                <span class="netra-doc__brand-name">NETRA</span>
+                <span class="netra-doc__brand-sub">National Electronic Tracking &amp; Records Analysis</span>
+            </span>
+        </div>
+        <h1 class="netra-doc__title">@document.Title</h1>
+        <p class="netra-doc__classification">
+            @Model.TypeLabel · @Model.SourceLabel · @Model.StatusLabel
+        </p>
+    </header>
+
+    <section class="netra-doc__metadata" aria-label="Report metadata">
+        <dl class="netra-facts">
+            <div class="netra-facts__item"><dt>Report type</dt><dd>@Model.TypeLabel</dd></div>
+            <div class="netra-facts__item"><dt>Source</dt><dd>@Model.SourceLabel</dd></div>
+            <div class="netra-facts__item"><dt>Status</dt><dd>@Model.StatusLabel</dd></div>
+            <div class="netra-facts__item"><dt>Reporting period</dt><dd>@Model.PeriodLabel</dd></div>
+            <div class="netra-facts__item"><dt>Created</dt><dd>@Model.CreatedAtText</dd></div>
+            @if (Model.GeneratedAtText is { } generated)
+            {
+                <div class="netra-facts__item"><dt>Generated</dt><dd>@generated</dd></div>
+            }
+            @if (Model.ArchivedAtText is { } archived)
+            {
+                <div class="netra-facts__item"><dt>Archived</dt><dd>@archived</dd></div>
+            }
+            <div class="netra-facts__item"><dt>Attribution</dt><dd>@Model.AuthorLine</dd></div>
+            @if (Model.RequestedByText is { } requestedBy)
+            {
+                <div class="netra-facts__item"><dt>Requested by</dt><dd>@requestedBy</dd></div>
+            }
+            @if (Model.Document.CaseNumber is { } caseNumber)
+            {
+                <div class="netra-facts__item">
+                    <dt>Linked case</dt>
+                    <dd>
+                        <a asp-controller="Cases" asp-action="Details" asp-route-id="@document.CaseId">@caseNumber</a>
+                    </dd>
+                </div>
+            }
+        </dl>
+
+        @if (document.AppliedFilters.Count > 0)
+        {
+            <div class="netra-chips netra-mt-3">
+                @foreach (var filterLabel in document.AppliedFilters)
+                {
+                    <span class="netra-chip">@filterLabel</span>
+                }
+            </div>
+        }
+    </section>
+
+    @if (!document.HasData && Model.Sections.Count == 0)
+    {
+        @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+        {
+            Title = "This report has no recorded data",
+            Text = "The sources behind this report held no records for the stored reporting period and filters. " +
+                "The report is kept with its parameters so it can be regenerated once data exists — " +
+                "NETRA does not fill a report with invented figures.",
+            Icon = NetraIcon.Report,
+            ActionText = Model.CanManage ? "Generate a new report" : null,
+            ActionUrl = Model.CanManage ? "/reports/generate" : null
+        })
+    }
+    else
+    {
+        if (!string.IsNullOrWhiteSpace(document.Summary))
+        {
+            <section class="netra-doc__section">
+                <h2 class="netra-doc__heading">Executive summary</h2>
+                <p class="netra-doc__lead">@document.Summary</p>
+            </section>
+        }
+
+        @if (Model.MetricCards.Count > 0)
+        {
+            <section class="netra-doc__section" aria-label="Supporting metrics">
+                <h2 class="netra-doc__heading">Supporting metrics</h2>
+                <div class="netra-grid netra-grid--stats">
+                    @foreach (var card in Model.MetricCards)
+                    {
+                        @await Html.PartialAsync("_StatCard", card)
+                    }
+                </div>
+            </section>
+        }
+
+        @foreach (var part in Model.Sections)
+        {
+            <section class="netra-doc__section">
+                <h2 class="netra-doc__heading">@part.Heading</h2>
+
+                @if (part.Fields.Count > 0)
+                {
+                    <dl class="netra-facts">
+                        @foreach (var field in part.Fields)
+                        {
+                            <div class="netra-facts__item">
+                                <dt>@field.Label</dt>
+                                <dd>@field.Value</dd>
+                            </div>
+                        }
+                    </dl>
+                }
+
+                @if (part.Table.Count > 0)
+                {
+                    <div class="netra-tablewrap netra-mt-3">
+                        <table class="netra-table netra-table--compact">
+                            <thead>
+                            <tr>
+                                @foreach (var column in part.Columns)
+                                {
+                                    <th scope="col">@column</th>
+                                }
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var row in part.Table)
+                            {
+                                <tr>
+                                    @foreach (var cell in row)
+                                    {
+                                        <td>@cell</td>
+                                    }
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (part.Rows.Count > 0)
+                {
+                    <ul class="netra-doc__list">
+                        @foreach (var line in part.Rows)
+                        {
+                            <li>@line</li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
+        @if (Model.HasCharts)
+        {
+            <section class="netra-doc__section" aria-label="Charts">
+                <h2 class="netra-doc__heading">Charts</h2>
+                <p class="netra-doc__note">
+                    Charts are rendered on the server as SVG from the same recorded figures shown in the
+                    tables above. No client-side script is involved.
+                </p>
+                <div class="netra-grid netra-grid--2">
+                    @if (Model.TrendChart is { } trend)
+                    {
+                        <div class="netra-card">
+                            <div class="netra-card__body">@Html.Raw(Charts.Render(ChartKind.Line, trend))</div>
+                        </div>
+                    }
+                    @if (Model.TypeChart is { } byType)
+                    {
+                        <div class="netra-card">
+                            <div class="netra-card__body">@Html.Raw(Charts.Render(ChartKind.Donut, byType))</div>
+                        </div>
+                    }
+                    @if (Model.SeverityChart is { } severity)
+                    {
+                        <div class="netra-card">
+                            <div class="netra-card__body">@Html.Raw(Charts.Render(ChartKind.Bar, severity))</div>
+                        </div>
+                    }
+                    @if (Model.DistrictChart is { } district)
+                    {
+                        <div class="netra-card">
+                            <div class="netra-card__body">@Html.Raw(Charts.Render(ChartKind.Bar, district))</div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (document.Findings.Count > 0)
+        {
+            <section class="netra-doc__section">
+                <h2 class="netra-doc__heading">Analytical observations</h2>
+                <ul class="netra-doc__findings">
+                    @foreach (var finding in document.Findings)
+                    {
+                        <li>@finding</li>
+                    }
+                </ul>
+            </section>
+        }
+
+        @if (document.LinkedCases.Count > 0)
+        {
+            <section class="netra-doc__section">
+                <h2 class="netra-doc__heading">Linked cases</h2>
+                <p class="netra-doc__note">
+                    Association is recorded case data — a shared person does not establish involvement.
+                </p>
+                <div class="netra-tablewrap">
+                    <table class="netra-table netra-table--compact">
+                        <thead>
+                        <tr>
+                            <th scope="col">Case</th>
+                            <th scope="col">Case number</th>
+                            <th scope="col">Recorded status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var linked in document.LinkedCases)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-controller="Cases" asp-action="Details" asp-route-id="@linked.Id">@linked.Title</a>
+                                </td>
+                                <td>@linked.CaseNumber</td>
+                                <td>@linked.Status</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+    }
+
+    @if (Model.AnalystParagraphs.Count > 0)
+    {
+        <section class="netra-doc__section netra-doc__section--authored">
+            <h2 class="netra-doc__heading">Analyst-authored observations</h2>
+            <p class="netra-doc__note">
+                This section is written by a person and is kept separate from the system-generated facts above.
+            </p>
+            @foreach (var paragraph in Model.AnalystParagraphs)
+            {
+                <p class="netra-doc__paragraph">@paragraph</p>
+            }
+        </section>
+    }
+
+    <footer class="netra-doc__footer">
+        <p>
+            This report summarises recorded NETRA data and analytical indicators. It is decision support for
+            authorised personnel: it does not confirm identity, does not establish guilt, and does not predict
+            future events. Figures reflect the records available at the time of viewing.
+        </p>
+        <p class="netra-doc__reference">Report reference @(document.Id.ToString("N")) · @Model.SourceLabel · @Model.PeriodLabel</p>
+    </footer>
+</article>

@@ -1,0 +1,263 @@
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Analytics
+@using NETRA.Web.Services.Charts
+@model NETRA.Web.Models.ViewModels.Analytics.AnalyticsViewModel
+@inject ChartRendererRegistry Charts
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Crime Analytics";
+    var hasData = Model.Report.TotalCrimeVolume > 0;
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Crime Analytics", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Crime Analytics",
+    Subtitle = hasData
+        ? $"{Model.Report.TotalCrimeVolume} case{(Model.Report.TotalCrimeVolume == 1 ? "" : "s")} analysed for {Model.PeriodLabel}."
+        : $"No crime records are available for the selected period ({Model.PeriodLabel})."
+})
+
+@* Server-rendered GET filters. Filtering happens in the service via SQL translation — no client-side JavaScript. *@
+<form class="netra-filters netra-filters--band" asp-controller="Analytics" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateFrom">Date from</label>
+        <input class="netra-input" type="date" id="DateFrom" name="DateFrom"
+               value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateTo">Date to</label>
+        <input class="netra-input" type="date" id="DateTo" name="DateTo"
+               value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DistrictId">District</label>
+        <select class="netra-select" id="DistrictId" name="DistrictId">
+            <option value="">All districts</option>
+            @foreach (var district in Model.Lookups.Districts)
+            {
+                <option value="@district.Id" selected="@(Model.Filter.DistrictId == district.Id)">@district.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="CrimeTypeId">Crime type</label>
+        <select class="netra-select" id="CrimeTypeId" name="CrimeTypeId">
+            <option value="">All crime types</option>
+            @foreach (var type in Model.Lookups.CrimeTypes)
+            {
+                <option value="@type.Id" selected="@(Model.Filter.CrimeTypeId == type.Id)">@type.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Severity">Severity</label>
+        <select class="netra-select" id="Severity" name="Severity">
+            <option value="">All severities</option>
+            @foreach (var severity in AnalyticsFilterViewModel.SeverityOptions)
+            {
+                <option value="@severity" selected="@(Model.Filter.Severity == severity)">@severity</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Analytics" asp-action="Index">Clear filters</a>
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+    </div>
+</form>
+
+@if (ViewContext.ModelState["DateTo"]?.Errors.Count > 0)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">
+            @foreach (var error in ViewContext.ModelState["DateTo"]!.Errors)
+            {
+                @error.ErrorMessage
+                <br />
+            }
+        </div>
+    </div>
+}
+
+<div class="netra-grid netra-grid--stats netra-mt-4">
+    @foreach (var card in Model.MetricCards)
+    {
+        @await Html.PartialAsync("_StatCard", card)
+    }
+</div>
+
+<div class="netra-grid netra-grid--form netra-mt-4">
+    <div class="netra-stack">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Analytics))</span>
+                    Crime Trend Over Time
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.PeriodLabel</span>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.TrendChart is { } trend)
+                {
+                    @Charts.Render(ChartKind.Line, trend)
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No crime records",
+                        Text = "No crime records are available for the selected period.",
+                        Icon = NetraIcon.Inbox
+                    })
+                }
+            </div>
+        </div>
+
+        <div class="netra-grid netra-grid--2">
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                        Crime Type Distribution
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    @if (Model.TypeChart is { } typeChart)
+                    {
+                        @Charts.Render(ChartKind.Donut, typeChart)
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                        {
+                            Title = "No type data",
+                            Text = "No crime records are available for the selected period.",
+                            Icon = NetraIcon.Inbox
+                        })
+                    }
+                </div>
+            </div>
+
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                        Severity by District
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    @if (Model.SeverityDistrictChart is { } districtChart)
+                    {
+                        @Charts.Render(ChartKind.Bar, districtChart)
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                        {
+                            Title = "No district data",
+                            Text = "No located crime records are available for the selected period.",
+                            Icon = NetraIcon.Map
+                        })
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-grid netra-grid--2">
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+                        Day-of-Week Pattern
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    @if (Model.DayOfWeekChart is { } weekChart)
+                    {
+                        @Charts.Render(ChartKind.Bar, weekChart)
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                        {
+                            Title = "No pattern data",
+                            Text = "No crime records are available for the selected period.",
+                            Icon = NetraIcon.Inbox
+                        })
+                    }
+                </div>
+            </div>
+
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+                        Time-of-Day Pattern
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    @if (Model.TimeOfDayChart is { } timeChart)
+                    {
+                        @Charts.Render(ChartKind.Bar, timeChart)
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                        {
+                            Title = "No pattern data",
+                            Text = "No crime records with incident times are available for the selected period.",
+                            Icon = NetraIcon.Inbox
+                        })
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-stack">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+                    Data Insights
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.Insights.Count > 0)
+                {
+                    <ul class="netra-insights">
+                        @foreach (var insight in Model.Insights)
+                        {
+                            <li class="netra-insights__item">@insight</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "Nothing to summarise",
+                        Text = "No crime records are available for the selected period.",
+                        Icon = NetraIcon.Inbox
+                    })
+                }
+            </div>
+            <div class="netra-card__footer netra-row netra-row--between">
+                <span class="netra-muted">Aggregated from recorded case data.</span>
+                <a class="netra-btn netra-btn--outline netra-btn--sm"
+                   asp-controller="Reports" asp-action="Index">Reports module</a>
+            </div>
+        </div>
+    </div>
+</div>

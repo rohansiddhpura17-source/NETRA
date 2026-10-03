@@ -1,0 +1,65 @@
+@using NETRA.Web.Models.Navigation
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var sections = (IReadOnlyList<NetraNavSection>)(ViewData["NavigationSections"]
+        ?? Array.Empty<NetraNavSection>());
+    var footerItems = (IReadOnlyList<NetraNavItem>)(ViewData["NavigationFooterItems"]
+        ?? Array.Empty<NetraNavItem>());
+
+    string Href(NetraNavItem item) => Url.Action(item.Action, item.Controller) ?? "#";
+}
+
+<aside class="netra-sidebar" aria-label="Primary navigation">
+    <div class="netra-sidebar__brand">
+        <span class="netra-brand__mark">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+        <span class="netra-brand__text">
+            <span class="netra-brand__name">NETRA</span>
+            <span class="netra-brand__tagline">Neural Intelligence Unit</span>
+        </span>
+    </div>
+
+    <nav class="netra-sidebar__nav">
+        @foreach (var navSection in sections)
+        {
+            <div class="netra-nav__section">@navSection.Label</div>
+            <ul class="netra-nav__list" style="list-style:none;margin:0;padding:0;">
+                @foreach (var item in navSection.Items)
+                {
+                    var active = item.IsActive(controller, action);
+                    <li>
+                        <a class="netra-nav__link @(active ? "is-active" : null)"
+                           href="@Href(item)"
+                           title="@item.Label"
+                           aria-current="@(active ? "page" : null)">
+                            <span class="netra-nav__icon">@Html.Raw(NetraIconPaths.Render(item.Icon))</span>
+                            <span class="netra-nav__text">@item.Label</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </nav>
+
+    @if (footerItems.Count > 0)
+    {
+        <div class="netra-sidebar__footer">
+            <ul style="list-style:none;margin:0;padding:0;">
+                @foreach (var item in footerItems)
+                {
+                    var active = item.IsActive(controller, action);
+                    <li>
+                        <a class="netra-nav__link @(active ? "is-active" : null)"
+                           href="@Href(item)"
+                           title="@item.Label"
+                           aria-current="@(active ? "page" : null)">
+                            <span class="netra-nav__icon">@Html.Raw(NetraIconPaths.Render(item.Icon))</span>
+                            <span class="netra-nav__text">@item.Label</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</aside>

@@ -1,0 +1,27 @@
+@using NETRA.Web.Models.Ui
+@model BreadcrumbsModel
+
+<nav class="netra-breadcrumbs" aria-label="Breadcrumb">
+    <ol style="list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0;padding:0;">
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var item = Model.Items[i];
+            var isLast = i == Model.Items.Count - 1;
+
+            <li class="netra-breadcrumbs__item">
+                @if (!isLast && !string.IsNullOrWhiteSpace(item.Url))
+                {
+                    <a href="@item.Url">@item.Text</a>
+                }
+                else
+                {
+                    <span aria-current="@(isLast ? "page" : null)">@item.Text</span>
+                }
+            </li>
+            @if (!isLast)
+            {
+                <li class="netra-breadcrumbs__sep" aria-hidden="true">/</li>
+            }
+        }
+    </ol>
+</nav>

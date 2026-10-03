@@ -1,0 +1,10 @@
+@using NETRA.Web.Models.Ui
+@model StatusBadgeModel
+
+<span class="netra-badge netra-badge--@(Model.Tone.ToString().ToLowerInvariant())">
+    @if (Model.ShowDot)
+    {
+        <span class="netra-badge__dot" aria-hidden="true"></span>
+    }
+    <span>@Model.Text</span>
+</span>

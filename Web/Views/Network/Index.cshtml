@@ -1,0 +1,291 @@
+@using NETRA.Application.Network
+@using NETRA.Web.Models.ViewModels.Network
+@using NETRA.Web.Services.Network
+@model NetworkViewModel
+@inject INetworkGraphRenderer NetworkGraphRenderer
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Network & Link Analysis";
+
+    Dictionary<string, string?> RouteFor(NetworkNodeDto node) => new()
+    {
+        ["EntityType"] = node.EntityType.ToString(),
+        ["EntityId"] = node.Id.ToString(),
+        ["RelationshipType"] = Model.Filter.RelationshipType?.ToString(),
+        ["Depth"] = Model.Filter.Depth?.ToString(),
+        ["DateFrom"] = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+        ["DateTo"] = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+        ["Search"] = Model.Filter.Search
+    };
+
+    string EmptyTitle() => Model.Data.Status switch
+    {
+        NetworkGraphStatus.SelectedEntityNotFound => "Selected entity not found",
+        NetworkGraphStatus.FilteredOut => "No matching records in this period",
+        NetworkGraphStatus.NoRelationships => "No relationships found",
+        _ => "Choose a starting entity"
+    };
+
+    string EmptyText() => Model.Data.Status switch
+    {
+        NetworkGraphStatus.SelectedEntityNotFound => "The selected person, case, or location is unavailable or you do not have access to it.",
+        NetworkGraphStatus.FilteredOut => "The selected case falls outside the date range. Adjust the period to continue the investigation.",
+        NetworkGraphStatus.NoRelationships => "No stored relationships match the selected type, date range, and traversal depth.",
+        _ => "Choose a person, case, or location to retrieve only its recorded, bounded network connections."
+    };
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Analysis", Url = null },
+        new() { Text = "Network & Link Analysis", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Network & Link Analysis",
+    Subtitle = "Investigate recorded person, case, and location relationships through bounded server-side traversal."
+})
+
+<form class="netra-filters netra-filters--band netra-network-filters" id="network-filters"
+      asp-controller="Network" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group">
+        <label class="netra-label" for="EntityType">Starting type</label>
+        <select class="netra-select" id="EntityType" name="EntityType">
+            <option value="">Choose type</option>
+            @foreach (var type in Enum.GetValues<NetworkEntityType>())
+            {
+                <option value="@type" selected="@(Model.Filter.EntityType?.Equals(type.ToString(), StringComparison.OrdinalIgnoreCase) == true)">@type</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group netra-filters__group--wide">
+        <label class="netra-label" for="EntityId">Starting entity</label>
+        <select class="netra-select" id="EntityId" name="EntityId">
+            <option value="">Choose a recorded entity</option>
+            @foreach (var item in Model.StartingEntities)
+            {
+                <option value="@item.Id" selected="@(Model.Filter.EntityId == item.Id)">
+                    @item.Name · @item.SecondaryLabel
+                </option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Search">Directory search</label>
+        <input class="netra-input" id="Search" name="Search" type="search" value="@Model.Filter.Search"
+               placeholder="Filter selector" maxlength="100" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="RelationshipType">Relationship</label>
+        <select class="netra-select" id="RelationshipType" name="RelationshipType">
+            <option value="">All recorded types</option>
+            @foreach (var type in Enum.GetValues<RelationshipType>())
+            {
+                <option value="@type" selected="@(Model.Filter.RelationshipType == type)">@NetraDisplay.Words(type.ToString())</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Depth">Traversal depth</label>
+        <select class="netra-select" id="Depth" name="Depth">
+            @for (var depth = 1; depth <= NetworkAnalysisLimits.MaxTraversalDepth; depth++)
+            {
+                <option value="@depth" selected="@(Model.Filter.Depth == depth)">Depth @depth</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateFrom">Date from</label>
+        <input class="netra-input" id="DateFrom" name="DateFrom" type="date"
+               value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateTo">Date to</label>
+        <input class="netra-input" id="DateTo" name="DateTo" type="date"
+               value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Network" asp-action="Index">Clear</a>
+        <button class="netra-btn netra-btn--primary netra-btn--sm" type="submit">Apply Filters</button>
+    </div>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="netra-validation netra-mt-4" role="alert">
+        <strong>Review the network filters.</strong>
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(value => value.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+@if (Model.Data.Status is NetworkGraphStatus.Ready or NetworkGraphStatus.NoRelationships)
+{
+    <div class="netra-grid netra-grid--stats netra-mt-4">
+        @foreach (var card in Model.SummaryCards)
+        {
+            @await Html.PartialAsync("_StatCard", card)
+        }
+    </div>
+}
+
+<div class="netra-network-layout netra-mt-4">
+    <section class="netra-card netra-network-card" aria-labelledby="network-canvas-title">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title" id="network-canvas-title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Network))</span>
+                Relationship Network
+            </h2>
+            <span class="netra-badge netra-badge--neutral">@Model.StatusText</span>
+        </div>
+        <div class="netra-card__body netra-network-card__body">
+            @if (Model.Graph is { } graph)
+            {
+                @NetworkGraphRenderer.Render(graph)
+            }
+            else
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = EmptyTitle(),
+                    Text = EmptyText(),
+                    Icon = NetraIcon.Network
+                })
+            }
+        </div>
+        <div class="netra-card__footer netra-network-card__footer">
+            <span class="netra-muted">Visualization is rendered server-side as SVG. Select entities through normal server round-trips.</span>
+            @if (Model.Data.IsResultLimited)
+            {
+                <span class="netra-badge netra-badge--warning">Results capped for safe analysis</span>
+            }
+            else if (Model.Data.Status == NetworkGraphStatus.Ready)
+            {
+                <span class="netra-badge netra-badge--success">@Model.Data.Nodes.Count nodes · @Model.Data.Relationships.Count links</span>
+            }
+        </div>
+    </section>
+
+    <aside class="netra-stack" aria-label="Selected entity details">
+        @if (Model.Data.Detail is { } detail)
+        {
+            <section class="netra-card netra-card--highlight">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+                        Selected Entity
+                    </h2>
+                    <span class="netra-badge netra-badge--primary">@detail.Entity.EntityType</span>
+                </div>
+                <div class="netra-card__body">
+                    <p class="netra-network-detail__name">@detail.Entity.Name</p>
+                    <p class="netra-network-detail__subtitle">@detail.Entity.SecondaryLabel</p>
+                    <dl class="netra-facts netra-network-facts">
+                        @foreach (var item in detail.Entity.Metadata)
+                        {
+                            <div><dt>@item.Label</dt><dd>@item.Value</dd></div>
+                        }
+                    </dl>
+                </div>
+            </section>
+
+            <section class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">Relationship Summary</h2>
+                    <span class="netra-badge netra-badge--neutral">@detail.ConnectedEntities.Count connected</span>
+                </div>
+                <div class="netra-card__body">
+                    @if (detail.RelationshipSummary.Count == 0)
+                    {
+                        <p class="netra-muted">No relationships match the current filters.</p>
+                    }
+                    else
+                    {
+                        <ul class="netra-network-summary">
+                            @foreach (var summary in detail.RelationshipSummary)
+                            {
+                                <li><span>@NetraDisplay.Words(summary.RelationshipType.ToString())</span><strong>@summary.Count</strong></li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </section>
+
+            <section class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">Connected Entities</h2>
+                </div>
+                <div class="netra-card__body">
+                    @if (detail.ConnectedEntities.Count == 0)
+                    {
+                        <p class="netra-muted">No connected entities in the current view.</p>
+                    }
+                    else
+                    {
+                        <ul class="netra-network-list">
+                            @foreach (var entity in detail.ConnectedEntities)
+                            {
+                                <li>
+                                    <div>
+                                        <strong>@entity.Name</strong>
+                                        <span>@entity.EntityType · @entity.SecondaryLabel</span>
+                                    </div>
+                                    <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Network" asp-action="Index"
+                                       asp-all-route-data="RouteFor(entity)">Select</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </section>
+
+            @if (detail.AssociatedCases.Count > 0)
+            {
+                <section class="netra-card">
+                    <div class="netra-card__header">
+                        <h2 class="netra-card__title">Associated Cases</h2>
+                    </div>
+                    <div class="netra-card__body">
+                        <ul class="netra-network-list">
+                            @foreach (var crimeCase in detail.AssociatedCases)
+                            {
+                                <li>
+                                    <div>
+                                        <strong>@crimeCase.Name</strong>
+                                        <span>@crimeCase.SecondaryLabel</span>
+                                    </div>
+                                    <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Cases" asp-action="Details"
+                                       asp-route-id="@crimeCase.Id">Open case</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </section>
+            }
+        }
+        else
+        {
+            <section class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">Entity Detail</h2>
+                </div>
+                <div class="netra-card__body">
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No entity selected",
+                        Text = "Select a person, case, or location to view recorded connections and metadata.",
+                        Icon = NetraIcon.Info
+                    })
+                </div>
+            </section>
+        }
+    </aside>
+</div>

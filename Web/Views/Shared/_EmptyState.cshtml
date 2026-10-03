@@ -1,0 +1,16 @@
+@using NETRA.Web.Models.Ui
+@model EmptyStateModel
+
+<div class="netra-empty">
+    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(Model.Icon))</span>
+    <p class="netra-empty__title">@Model.Title</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Text))
+    {
+        <p class="netra-empty__text">@Model.Text</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ActionText) && !string.IsNullOrWhiteSpace(Model.ActionUrl))
+    {
+        <a class="netra-btn netra-btn--outline netra-btn--sm netra-empty__action"
+           href="@Model.ActionUrl">@Model.ActionText</a>
+    }
+</div>

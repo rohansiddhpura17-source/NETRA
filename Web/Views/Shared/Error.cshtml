@@ -1,0 +1,31 @@
+@model ErrorViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = Model.Title;
+
+    var status = Model.StatusCode ?? 500;
+}
+
+<div class="netra-errorpage">
+    <div>
+        <p class="netra-errorpage__code">@status</p>
+        <h1 class="netra-errorpage__title">@Model.Title</h1>
+        <p class="netra-errorpage__text">@Model.Message</p>
+
+        <div class="netra-errorpage__actions">
+            <a class="netra-btn netra-btn--primary" asp-controller="Home" asp-action="Index">
+                Return to NETRA
+            </a>
+            <a class="netra-btn netra-btn--outline" asp-controller="Account" asp-action="Login">
+                Sign in
+            </a>
+        </div>
+
+        @if (Model.ShowRequestId)
+        {
+            <p class="netra-errorpage__ref">
+                Reference: <span class="netra-mono">@Model.RequestId</span>
+            </p>
+        }
+    </div>
+</div>

@@ -1,0 +1,192 @@
+@using NETRA.Application.ImageInvestigation
+@using NETRA.Web.Models.ViewModels.ImageInvestigation
+@model ImageInvestigationViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Image-Assisted Investigation";
+
+    string ScoreLabel(decimal score) =>
+        $"{Math.Round(score * 100m, 0, MidpointRounding.AwayFromZero):0}%";
+
+    string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0
+            ? "?"
+            : string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Analysis", Url = null },
+        new() { Text = "Image-Assisted Investigation", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Image-Assisted Investigation",
+    Subtitle = "Search authorised NETRA imagery for potential matches. Results are investigative leads for human verification."
+})
+
+<div class="netra-alert netra-alert--warning netra-image-disclaimer" role="note">
+    <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+    <div class="netra-alert__body">
+        <strong>Investigative Lead &mdash; Verification Required.</strong>
+        NETRA's image matching is a controlled academic/demo capability using synthetic,
+        deterministic candidate scores. It never confirms identity and never indicates guilt.
+    </div>
+</div>
+
+@if (TempData["Netra.Error"] is string error)
+{
+    <div class="netra-alert netra-alert--danger" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">@error</div>
+    </div>
+}
+
+<div class="netra-image-layout">
+    <section class="netra-card netra-image-input" aria-label="Subject input">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Subject Input</h2>
+            @if (Model.Result is not null)
+            {
+                <span class="netra-badge netra-badge--primary">Analyse a new subject</span>
+            }
+        </div>
+        <div class="netra-card__body">
+            <form asp-controller="ImageInvestigation" asp-action="Analyze" method="post"
+                  enctype="multipart/form-data" class="netra-stack">
+                <div asp-validation-summary="ModelOnly" class="netra-validation"></div>
+
+                <div class="netra-field">
+                    <label class="netra-label" asp-for="Upload.CrimeCaseId">Case</label>
+                    <select class="netra-select" asp-for="Upload.CrimeCaseId">
+                        <option value="">Attach to case…</option>
+                        @foreach (var crimeCase in Model.Cases)
+                        {
+                            <option value="@crimeCase.Id"
+                                    selected="@(Model.Upload.CrimeCaseId == crimeCase.Id)">
+                                @crimeCase.CaseNumber · @crimeCase.Title
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="Upload.CrimeCaseId" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-field">
+                    <label class="netra-label" asp-for="Upload.File">Investigation image</label>
+                    <input class="netra-input" asp-for="Upload.File" type="file"
+                           accept=".jpg,.jpeg,.png,.webp"
+                           maxlength="@(ImageInvestigationLimits.MaxUploadBytes)" />
+                    <span class="netra-muted netra-field__hint">
+                        Supported: JPEG, PNG, WEBP · up to
+                        @(ImageInvestigationLimits.MaxUploadBytes / (1024 * 1024)) MB.
+                        Files are validated and stored server-side.
+                    </span>
+                    <span asp-validation-for="Upload.File" class="netra-field__error"></span>
+                </div>
+
+                <button class="netra-btn netra-btn--primary" type="submit">Search Potential Matches</button>
+            </form>
+
+            @if (Model.Result is { } result)
+            {
+                <div class="netra-image-preview">
+                    <div class="netra-image-preview__head">
+                        <span class="netra-label">Uploaded subject (case @result.CaseNumber)</span>
+                    </div>
+                    <img class="netra-image-preview__frame"
+                         src="/image-investigation/Image/@result.ImageRecordId"
+                         alt="Uploaded investigation image preview" />
+                    <dl class="netra-facts">
+                        <div><dt>File</dt><dd>@result.FileName</dd></div>
+                        <div><dt>Size</dt><dd>@((result.FileSizeBytes / 1024.0).ToString("0.#")) KB · @result.ContentType</dd></div>
+                        <div><dt>SHA-256</dt><dd class="netra-mono">@result.ChecksumSha256[..Math.Min(16, result.ChecksumSha256.Length)]…</dd></div>
+                        <div><dt>Case</dt><dd>@result.CaseNumber — @result.CaseTitle</dd></div>
+                        <div><dt>Uploaded</dt><dd>@result.UploadedAt.ToString("dd MMM yyyy HH:mm") UTC</dd></div>
+                        <div><dt>Provider</dt><dd>@result.ProviderName</dd></div>
+                    </dl>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="netra-card netra-image-matches" aria-label="Potential matches">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Potential Matches</h2>
+            @if (Model.Result is { } analysed)
+            {
+                <span class="netra-badge netra-badge--neutral">@analysed.Candidates.Count candidate(s)</span>
+            }
+        </div>
+        <div class="netra-card__body">
+            @if (Model.Result is null)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No image analysed yet",
+                    Text = "Upload an investigation image to search authorised NETRA imagery for potential matches.",
+                    Icon = NetraIcon.Image
+                })
+            }
+            else if (!Model.Result.ProviderAvailable)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "Match provider unavailable",
+                    Text = "The image was stored, but the demo match provider could not run. Review the stored record later or upload again.",
+                    Icon = NetraIcon.Alert
+                })
+            }
+            else if (Model.Result.Candidates.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No potential matches",
+                    Text = "The stored NETRA image database contains no other images to compare against. No candidates were fabricated.",
+                    Icon = NetraIcon.Image
+                })
+            }
+            else
+            {
+                <div class="netra-match-grid">
+                    @foreach (var candidate in Model.Result.Candidates)
+                    {
+                        <article class="netra-match-card">
+                            <div class="netra-match-card__head">
+                                <span class="netra-match-avatar" aria-hidden="true">@Initials(candidate.DisplayName)</span>
+                                <div class="netra-match-card__identity">
+                                    <strong>@candidate.DisplayName</strong>
+                                    <span class="netra-muted netra-mono">@candidate.Reference · @candidate.DisplaySubtitle</span>
+                                </div>
+                                <span class="netra-badge netra-badge--primary netra-match-score"
+                                      title="Synthetic similarity — an investigative lead, not an identity match">
+                                    @ScoreLabel(candidate.SimilarityScore)
+                                </span>
+                            </div>
+                            <div class="netra-match-card__facts">
+                                <span>Associated cases: <strong>@candidate.AssociatedCaseCount</strong></span>
+                                <span>Related locations: <strong>@candidate.RelatedLocationCount</strong></span>
+                            </div>
+                            <div class="netra-match-card__actions">
+                                <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                   asp-controller="ImageInvestigation" asp-action="Match"
+                                   asp-route-match="@candidate.MatchId">View Details</a>
+                                <span class="netra-muted netra-match-card__note">Investigative lead</span>
+                            </div>
+                        </article>
+                    }
+                </div>
+                <p class="netra-muted netra-match-footnote">
+                    Similarity scores are deterministic synthetic values from the demo
+                    provider. Review each lead manually before acting on it.
+                </p>
+            }
+        </div>
+    </section>
+</div>

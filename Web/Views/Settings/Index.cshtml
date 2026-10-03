@@ -1,0 +1,76 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model SettingsOverviewViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Settings";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Settings",
+    Subtitle = $"Personal settings for {Model.DisplayName} ({Model.UserName}). Everything here is " +
+        "scoped to the account you are signed in with — there is no user picker and no way to " +
+        "change another person's settings from these pages.",
+    Meta = new HtmlString(string.Join(" · ", Model.Roles))
+})
+
+<div class="netra-settings">
+    <div class="netra-settings__cards">
+        @foreach (var card in Model.Cards)
+        {
+            <a class="netra-settings-card" href="@card.Url">
+                <span class="netra-settings-card__title">
+                    @Html.Raw(NetraIconPaths.Render(card.Icon))@card.Title
+                </span>
+                <span class="netra-settings-card__text">@card.Description</span>
+                <span class="netra-settings-card__foot">
+                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                    {
+                        Text = card.Status ?? "Open",
+                        Tone = card.StatusTone,
+                        ShowDot = false
+                    })
+                </span>
+            </a>
+        }
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+                What NETRA settings do not change
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            <dl class="netra-facts">
+                <div>
+                    <dt>Username and email</dt>
+                    <dd>Sign-in identity. Changed by a System Administrator in User Management.</dd>
+                </div>
+                <div>
+                    <dt>Roles and access</dt>
+                    <dd>Assigned by a System Administrator. Navigation only reflects them.</dd>
+                </div>
+                <div>
+                    <dt>Notifications by email</dt>
+                    <dd>This deployment has no mail provider; delivery is in-app only.</dd>
+                </div>
+                <div>
+                    <dt>Theme</dt>
+                    <dd>Fixed to the NETRA dark palette. Only spacing and motion are adjustable.</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>

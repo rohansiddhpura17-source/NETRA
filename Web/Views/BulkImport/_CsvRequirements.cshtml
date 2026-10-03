@@ -1,0 +1,88 @@
+@using NETRA.Application.BulkImport
+@model BulkImportRequirementsDto
+
+<div class="netra-import-requirements">
+    <h3 class="netra-import-requirements__title">CSV columns NETRA imports</h3>
+    <p class="netra-muted">
+        The first row must name these columns. Order is free, names are matched
+        case-insensitively, and a column NETRA does not know makes the whole file unusable
+        rather than being silently dropped.
+    </p>
+
+    <div class="netra-tablewrap">
+        <table class="netra-table netra-import-columns">
+            <caption class="netra-visually-hidden">Supported CSV columns</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Column</th>
+                    <th scope="col">Required</th>
+                    <th scope="col">Format</th>
+                    <th scope="col">Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var column in Model.Columns)
+                {
+                    <tr>
+                        <th scope="row" class="netra-mono">@column.Name</th>
+                        <td>
+                            @if (column.Required)
+                            {
+                                <span class="netra-badge netra-badge--primary">Required</span>
+                            }
+                            else
+                            {
+                                <span class="netra-badge netra-badge--neutral">Optional</span>
+                            }
+                        </td>
+                        <td>@column.Format</td>
+                        <td class="netra-muted">@column.Description</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="netra-import-limits">
+        <h3 class="netra-import-requirements__title">File limits</h3>
+        <ul class="netra-import-limits__list">
+            <li>
+                File type:
+                <strong>@string.Join(", ", Model.AllowedExtensions)</strong>
+            </li>
+            <li>Maximum file size: <strong>@(Model.MaxFileBytes / (1024 * 1024)) MB</strong></li>
+            <li>Maximum data rows per file: <strong>@Model.MaxDataRows.ToString("N0")</strong></li>
+            <li>Rows shown on the preview page: <strong>@Model.MaxPreviewRows.ToString("N0")</strong></li>
+            <li>Problems shown per page: <strong>@Model.MaxShownIssues.ToString("N0")</strong></li>
+        </ul>
+    </div>
+
+    <div class="netra-import-values">
+        <h3 class="netra-import-requirements__title">Configured values</h3>
+        <p class="netra-muted">
+            Reference columns accept either the code or the full name, exactly as NETRA has
+            them configured. Values outside these lists are rejected during validation.
+        </p>
+        <dl class="netra-facts">
+            <div>
+                <dt>Crime types</dt>
+                <dd>@(Model.CrimeTypes.Count == 0 ? "None configured yet" : string.Join(", ", Model.CrimeTypes))</dd>
+            </div>
+            <div>
+                <dt>Districts</dt>
+                <dd>@(Model.Districts.Count == 0 ? "None configured yet" : string.Join(", ", Model.Districts))</dd>
+            </div>
+            <div>
+                <dt>Police stations</dt>
+                <dd>@(Model.PoliceStations.Count == 0 ? "None configured yet" : string.Join(", ", Model.PoliceStations))</dd>
+            </div>
+        </dl>
+        @if (Model.ReferenceDataTruncated)
+        {
+            <p class="netra-muted netra-import-values__note">
+                The lists above are capped for display. Every configured value is still
+                accepted by validation.
+            </p>
+        }
+    </div>
+</div>

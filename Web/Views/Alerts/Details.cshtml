@@ -1,0 +1,209 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Alerts
+@model NETRA.Web.Models.ViewModels.Alerts.AlertDetailsViewModel
+@{
+    Layout = "_Layout";
+    var alert = Model.Alert;
+    ViewData["Title"] = alert.Title;
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = "/alerts" },
+        new() { Text = "Alerts", Url = "/alerts" },
+        new() { Text = "Alert details", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = alert.Title,
+    Subtitle = Model.CategoryLabel + " · Raised " + Model.CreatedAtText,
+    Meta = null
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+<div class="netra-grid netra-grid--2 netra-mt-4">
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                Alert
+            </h2>
+            <span class="netra-alert__badges">
+                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                    {
+                        Text = Model.SeverityLabel,
+                        Tone = Model.SeverityTone
+                    })
+                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                    {
+                        Text = Model.StatusLabel,
+                        Tone = Model.StatusTone
+                    })
+            </span>
+        </div>
+        <div class="netra-card__body">
+            <dl class="netra-facts">
+                <div>
+                    <dt>Type</dt>
+                    <dd>@Model.CategoryLabel</dd>
+                </div>
+                <div>
+                    <dt>Source</dt>
+                    <dd>@(alert.IsGenerated ? "Analytically generated" : "Manually raised")</dd>
+                </div>
+                <div>
+                    <dt>Detected</dt>
+                    <dd>@Model.CreatedAtText</dd>
+                </div>
+                @if (Model.WindowLabel is { } window)
+                {
+                    <div>
+                        <dt>Analysis window</dt>
+                        <dd>@window</dd>
+                    </div>
+                }
+                @if (alert.CrimeCaseId is { } caseId)
+                {
+                    <div>
+                        <dt>Related case</dt>
+                        <dd>
+                            <a asp-controller="Cases" asp-action="Details" asp-route-id="@caseId">
+                                @(alert.CaseNumber ?? "Open case")
+                            </a>
+                            @if (!string.IsNullOrWhiteSpace(alert.CaseTitle))
+                            {
+                                <span class="netra-muted"> — @alert.CaseTitle</span>
+                            }
+                        </dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(alert.RelatedEntityLabel))
+                {
+                    <div>
+                        <dt>Related entity</dt>
+                        <dd>@alert.RelatedEntityLabel</dd>
+                    </div>
+                }
+                @if (alert.AcknowledgedAt is not null)
+                {
+                    <div>
+                        <dt>Acknowledged</dt>
+                        <dd>@Model.AcknowledgedAtText</dd>
+                    </div>
+                }
+                @if (alert.ResolvedAt is not null)
+                {
+                    <div>
+                        <dt>Resolved / dismissed</dt>
+                        <dd>@Model.ResolvedAtText @(string.IsNullOrWhiteSpace(alert.ResolvedByName) ? "" : "by " + alert.ResolvedByName)</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(alert.ResolutionNotes))
+                {
+                    <div>
+                        <dt>Resolution notes</dt>
+                        <dd>@alert.ResolutionNotes</dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Analytics))</span>
+                Analytical basis
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            @if (string.IsNullOrWhiteSpace(alert.Description))
+            {
+                <p class="netra-muted">
+                    No analytical basis was recorded for this alert. Review the related case data directly.
+                </p>
+            }
+            else
+            {
+                <p class="netra-alert__basis">@alert.Description</p>
+            }
+            <p class="netra-muted netra-alert__disclaimer">
+                ⚠ This alert summarises recorded case data and analytical indicators produced by NETRA's
+                risk, anomaly, association and security subsystems. It is decision support, not a finding of
+                wrongdoing, and does not assess intent.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+            Actions
+        </h2>
+    </div>
+    <div class="netra-card__body">
+        @if (!Model.IsOpen)
+        {
+            <p class="netra-muted">
+                This alert is @Model.StatusLabel.ToLowerInvariant() and no longer accepts triage actions.
+            </p>
+        }
+        else if (!Model.CanManage)
+        {
+            <p class="netra-muted">
+                You can review this alert, but acknowledging, resolving or dismissing it requires a
+                supervisory or analyst role.
+            </p>
+        }
+        else
+        {
+            <div class="netra-alert__actions">
+                @if (alert.Status != AlertStatus.Acknowledged && alert.Status != AlertStatus.InProgress)
+                {
+                    <form class="netra-inline-form" method="post" action="/alerts/acknowledge/@alert.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Acknowledge</button>
+                    </form>
+                }
+                <form class="netra-form netra-mt-3" method="post" action="/alerts/resolve/@alert.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="netra-field">
+                        <label class="netra-label" for="resolutionNotes">Resolution notes</label>
+                        <textarea class="netra-input" id="resolutionNotes" name="resolutionNotes" rows="2"
+                                  maxlength="2000" placeholder="What was done and why this alert is resolved."></textarea>
+                    </div>
+                    <button type="submit" class="netra-btn netra-btn--success netra-btn--sm">Resolve</button>
+                </form>
+                <form class="netra-form netra-mt-3" method="post" action="/alerts/dismiss/@alert.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="netra-field">
+                        <label class="netra-label" for="reason">Dismissal reason</label>
+                        <textarea class="netra-input" id="reason" name="reason" rows="2"
+                                  maxlength="2000" placeholder="Why this alert is being dismissed."></textarea>
+                    </div>
+                    <button type="submit" class="netra-btn netra-btn--danger netra-btn--sm">Dismiss</button>
+                </form>
+            </div>
+        }
+    </div>
+    <div class="netra-card__footer">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Alerts" asp-action="Index">
+            &larr; Back to alerts
+        </a>
+    </div>
+</div>

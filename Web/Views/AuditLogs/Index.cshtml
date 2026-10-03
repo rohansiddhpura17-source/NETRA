@@ -1,0 +1,172 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.AuditLogs
+@model NETRA.Web.Models.ViewModels.AuditLogs.AuditLogsIndexViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Audit Logs";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "Audit Logs", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Audit Logs",
+    Subtitle = "The append-only record of what changed in NETRA, who did it and when. Entries are " +
+        "written by the services that make the change, so an entry and the change it describes " +
+        "commit together. Nothing on this page is editable.",
+    Actions = (HtmlString)Html.Raw(
+        "<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/AuditLogs\">" +
+        $"<span class=\"netra-btn__icon\">{NetraIconPaths.Render(NetraIcon.Audit)}</span>Most recent entries</a>")
+})
+
+@* Server-side GET filters. Every control maps to a column that exists in the audit table. *@
+<form class="netra-filters netra-filters--band netra-mt-4" id="audit-filters"
+      asp-controller="AuditLogs" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group netra-filters__group--wide">
+        <label class="netra-label" for="actorUserId">Actor</label>
+        <select class="netra-select" id="actorUserId" name="actorUserId">
+            <option value="">Any account</option>
+            @foreach (var actor in Model.Options.Actors)
+            {
+                <option value="@actor.UserId" selected="@(Model.Filter.ActorUserId == actor.UserId)">
+                    @actor.DisplayName
+                </option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="entityType">Record type</label>
+        <select class="netra-select" id="entityType" name="entityType">
+            <option value="">All record types</option>
+            @foreach (var entityType in Model.Options.EntityTypes)
+            {
+                <option value="@entityType" selected="@(Model.Filter.EntityType == entityType)">
+                    @NetraDisplay.Words(entityType)
+                </option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="action">Action</label>
+        <select class="netra-select" id="action" name="action">
+            <option value="">All actions</option>
+            @foreach (var action in Model.Options.Actions)
+            {
+                <option value="@action" selected="@(Model.Filter.Action == action)">
+                    @NetraDisplay.Words(action)
+                </option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="dateFrom">From</label>
+        <input class="netra-input" type="date" id="dateFrom" name="dateFrom"
+               value="@(Model.Filter.DateFrom?.ToString("yyyy-MM-dd"))" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="dateTo">To</label>
+        <input class="netra-input" type="date" id="dateTo" name="dateTo"
+               value="@(Model.Filter.DateTo?.ToString("yyyy-MM-dd"))" />
+    </div>
+    <div class="netra-filters__actions">
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+        @if (Model.HasActiveFilters)
+        {
+            <a class="netra-btn netra-btn--ghost netra-btn--sm"
+               asp-controller="AuditLogs" asp-action="Index">Clear filters</a>
+        }
+    </div>
+</form>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+            Trail
+        </h2>
+        <span class="netra-badge netra-badge--neutral">
+            @Model.TotalCount entr@(Model.TotalCount == 1 ? "y" : "ies")
+        </span>
+    </div>
+    <div class="netra-card__body">
+        @if (Model.Entries.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = Model.HasActiveFilters
+                    ? "No audit entries match the selected filters"
+                    : "No audit entries yet",
+                Text = Model.HasActiveFilters
+                    ? "Nothing in the trail matches this actor, record type, action or date range. " +
+                      "Clear the filters to see the most recent entries."
+                    : "Audit entries appear as NETRA records are created and changed. The trail is " +
+                      "written by the application itself, so an empty trail here means an untouched " +
+                      "database rather than a display problem.",
+                Icon = NetraIcon.Audit,
+                ActionText = Model.HasActiveFilters ? "Clear filters" : null,
+                ActionUrl = Model.HasActiveFilters ? "/AuditLogs" : null
+            })
+        }
+        else
+        {
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-audit">
+                    <caption class="netra-visually-hidden">Audit trail entries</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">When</th>
+                            <th scope="col">Actor</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Record</th>
+                            <th scope="col">Summary</th>
+                            <th scope="col">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model.Entries)
+                        {
+                            <tr>
+                                <td class="netra-audit__time">
+                                    <span class="netra-table__primary">@entry.TimestampText</span>
+                                    <span class="netra-muted">UTC</span>
+                                </td>
+                                <td>
+                                    <span class="netra-table__primary">@entry.ActorLabel</span>
+                                    @if (entry.Entry.ActorUserName is { } userName)
+                                    {
+                                        <span class="netra-muted netra-mono">@userName</span>
+                                    }
+                                    @if (entry.Entry.IsSystemAction)
+                                    {
+                                        <span class="netra-badge netra-badge--info">System</span>
+                                    }
+                                </td>
+                                <td><span class="netra-badge netra-badge--primary">@entry.ActionLabel</span></td>
+                                <td>
+                                    <span class="netra-table__primary">@entry.EntityLabel</span>
+                                    <span class="netra-muted netra-mono">@entry.EntityIdText</span>
+                                </td>
+                                <td class="netra-audit__summary">@entry.Summary</td>
+                                <td>
+                                    <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                       asp-controller="AuditLogs" asp-action="Details"
+                                       asp-route-id="@entry.Entry.Id">View entry</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.Pagination)

@@ -1,0 +1,136 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model AccountSettingsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Account settings";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "Account", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Account",
+    Subtitle = "The officer details other NETRA users see on cases, notes and the audit trail. " +
+        "Sign-in identity is not editable here.",
+    Meta = new HtmlString(string.Join(" · ", Model.Roles))
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+
+<form asp-controller="Settings" asp-action="Account" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-settings__form">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                    Sign-in identity (read-only)
+                </h2>
+                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                {
+                    Text = Model.IsActive ? "Active" : "Inactive",
+                    Tone = Model.IsActive ? NetraTone.Success : NetraTone.Danger
+                })
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-settings__pair">
+                    <div class="netra-field">
+                        <label class="netra-label">Username</label>
+                        @* No name attribute: the identifier is never posted, so it cannot be forged. *@
+                        <input class="netra-input netra-input--readonly" type="text" value="@Model.UserName" readonly />
+                    </div>
+                    <div class="netra-field">
+                        <label class="netra-label">Email address</label>
+                        <input class="netra-input netra-input--readonly" type="text" value="@Model.Email" readonly />
+                    </div>
+                </div>
+                <p class="netra-settings__note netra-mt-3">
+                    These two fields identify the account and are used by sign-in and password
+                    recovery, so only a System Administrator can change them — in User Management.
+                    Account state (active, locked out, roles) is administrative too.
+                </p>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                    Officer details
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-settings__pair">
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.FirstName)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="FirstName">First name</label>
+                        <input class="netra-input" asp-for="FirstName" type="text" maxlength="100" required />
+                        <span asp-validation-for="FirstName" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.LastName)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="LastName">Last name</label>
+                        <input class="netra-input" asp-for="LastName" type="text" maxlength="100" required />
+                        <span asp-validation-for="LastName" class="netra-field__error"></span>
+                    </div>
+                </div>
+
+                <div class="netra-settings__pair netra-mt-3">
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.BadgeNumber)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="BadgeNumber">Badge number (optional)</label>
+                        <input class="netra-input" asp-for="BadgeNumber" type="text" maxlength="50" />
+                        <p class="netra-field__hint">Must be unique across accounts when supplied.</p>
+                        <span asp-validation-for="BadgeNumber" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.Rank)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="Rank">Rank (optional)</label>
+                        <input class="netra-input" asp-for="Rank" type="text" maxlength="100" />
+                        <span asp-validation-for="Rank" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                    Recorded changes
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                @{
+                    var lastSignIn = Model.LastLoginAt is { } loginAt
+                        ? $"Last sign-in: {loginAt:dd MMM yyyy HH:mm} UTC."
+                        : "No sign-in time has been recorded for this account.";
+                }
+                <p class="netra-settings__note">
+                    Saving a profile change writes one audit entry per field, with the before and
+                    after values. The trail never stores a password, a password hash or a security
+                    stamp. @lastSignIn
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" href="/settings">Back to settings</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Save profile</button>
+    </div>
+</form>

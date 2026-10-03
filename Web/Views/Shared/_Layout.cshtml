@@ -1,0 +1,48 @@
+@using NETRA.Application.Abstractions
+@using NETRA.Application.Settings
+@inject ISettingsService Settings
+@inject IAuditActorAccessor Actor
+@{
+    Layout = null;
+    string? PageTitle = ViewData["Title"] as string;
+
+    // The signed-in user's stored display choices, applied as body classes. The theme is
+    // still fixed to the NETRA dark palette; this is how a preference takes effect
+    // server-side, with no client-side script and no stored CSS.
+    var appearance = await Settings.GetAppearanceAsync(Actor.GetUserId(User));
+    var bodyClass = $"netra-density--{appearance.Density.ToString().ToLowerInvariant()}" +
+        (appearance.ReducedMotion ? " netra-motion--reduced" : string.Empty);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@(string.IsNullOrWhiteSpace(PageTitle) ? "NETRA" : $"{PageTitle} · NETRA")</title>
+    <link rel="stylesheet" href="~/css/netra.css" asp-append-version="true" />
+</head>
+<body class="@bodyClass">
+    <a class="netra-skip-link" href="#main-content">Skip to main content</a>
+
+    @* CSS-only sidebar drawer for narrow viewports. No JavaScript is used. *@
+    <input type="checkbox" id="netra-sidebar-toggle" class="netra-sidebar-toggle" />
+    <label for="netra-sidebar-toggle" class="netra-sr-only">Toggle navigation</label>
+
+    <div class="netra-shell">
+        @await Html.PartialAsync("_Sidebar")
+
+        <label for="netra-sidebar-toggle" class="netra-sidebar-backdrop" aria-hidden="true"></label>
+
+        <div class="netra-main">
+            @await Html.PartialAsync("_Topbar")
+
+            <main class="netra-content" id="main-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

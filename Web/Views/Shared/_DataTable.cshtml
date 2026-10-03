@@ -1,0 +1,87 @@
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@model DataTableModel
+
+<div class="netra-card">
+    <div class="netra-tablewrap">
+        <table class="netra-table @(Model.Columns.Any(c => c.IsNumeric) ? "netra-table--numeric" : null)">
+            @if (!string.IsNullOrWhiteSpace(Model.Caption))
+            {
+                <caption>@Model.Caption</caption>
+            }
+            <thead>
+                <tr>
+                    @foreach (var column in Model.Columns)
+                    {
+                        var numericClass = column.IsNumeric ? "is-numeric" : null;
+
+                        @if (string.IsNullOrWhiteSpace(column.SortField))
+                        {
+                            <th scope="col" class="@numericClass">@column.Title</th>
+                        }
+                        else
+                        {
+                            var sortField = column.SortField;
+                            <th scope="col" class="@numericClass">
+                                <a class="netra-table__sort"
+                                   asp-controller="@Model.SortController"
+                                   asp-action="@Model.SortAction"
+                                   asp-route-sort="@sortField">@column.Title</a>
+                            </th>
+                        }
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="@Model.Columns.Count" style="padding:0;">
+                            @await Html.PartialAsync("_EmptyState", Model.Empty)
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            @foreach (var column in Model.Columns)
+                            {
+                                <td class="@(column.IsNumeric ? "is-numeric" : null)">
+                                    @RenderCell(row, column)
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.FooterViewDataKey)
+        && ViewData[Model.FooterViewDataKey!] is HtmlString footer)
+    {
+        @footer
+    }
+</div>
+
+@functions {
+    // HtmlString values are rendered as-is (badges, links). Everything else is
+    // HTML-encoded by default so row data can never inject markup.
+    private static IHtmlContent RenderCell(TableRowModel row, TableColumnModel column)
+    {
+        if (!row.Cells.TryGetValue(column.Key, out var value) || value is null)
+        {
+            return HtmlString.Empty;
+        }
+
+        return value switch
+        {
+            HtmlString html => html,
+            IHtmlContent content => content,
+            _ => new HtmlString(HtmlEncoder.Default.Encode(value.ToString() ?? string.Empty))
+        };
+    }
+}

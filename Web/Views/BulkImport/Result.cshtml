@@ -1,0 +1,243 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportResultViewModel
+@{
+    Layout = "_Layout";
+    var result = Model.Result;
+    var job = result.Job;
+    ViewData["Title"] = $"Import result — {job.Name}";
+
+    var tone = job.Status switch
+    {
+        ImportStatus.Completed => "success",
+        ImportStatus.CompletedWithErrors => "warning",
+        ImportStatus.Cancelled => "neutral",
+        _ => "danger"
+    };
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Data", Url = "/BulkImport" },
+        new() { Text = "Bulk Data Import", Url = "/BulkImport" },
+        new() { Text = "Result", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Import result",
+    Subtitle = "What this import created, what it skipped and what it rejected."
+})
+
+<div class="netra-alert netra-alert--@tone" role="status">
+    <span class="netra-alert__icon">
+        @Html.Raw(NetraIconPaths.Render(
+            tone == "success" ? NetraIcon.Info : tone == "danger" ? NetraIcon.Alert : NetraIcon.Import))
+    </span>
+    <div class="netra-alert__body">
+        <strong>
+            @if (job.Status == ImportStatus.Completed)
+            {
+                <span>Import completed.</span>
+            }
+            else if (job.Status == ImportStatus.CompletedWithErrors)
+            {
+                <span>Import completed with rows held back.</span>
+            }
+            else if (job.Status == ImportStatus.Cancelled)
+            {
+                <span>Import cancelled before anything was written.</span>
+            }
+            else if (job.Status == ImportStatus.Failed)
+            {
+                <span>Import failed and was rolled back.</span>
+            }
+            else
+            {
+                <span>This import has not been run.</span>
+            }
+        </strong>
+        <p class="netra-import-result__summary">
+            @if (job.Status is ImportStatus.Completed or ImportStatus.CompletedWithErrors)
+            {
+                <span>
+                    @result.ImportedRows.ToString("N0") case(s) registered from
+                    @BulkImportStatusUi.Rows(result.TotalRows).
+                    @if (result.SkippedDuplicateRows > 0)
+                    {
+                        <span> @result.SkippedDuplicateRows duplicate row(s) skipped.</span>
+                    }
+                    @if (result.RejectedRows > 0)
+                    {
+                        <span> @result.RejectedRows row(s) rejected.</span>
+                    }
+                </span>
+            }
+            else if (job.Status == ImportStatus.Failed)
+            {
+                <span>Nothing was imported and no cases were created.</span>
+            }
+            else if (job.Status == ImportStatus.Cancelled)
+            {
+                <span>No cases were created. The stored file and its validation result are kept for audit.</span>
+            }
+            else
+            {
+                <span>
+                    This import is @job.Status. Open the preview page to review it, or re-validate
+                    the file.
+                </span>
+            }
+        </p>
+    </div>
+</div>
+
+@await Html.PartialAsync("_JobSummary", job)
+
+<section class="netra-card netra-import-result-run" aria-label="Run details">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">Run details</h2>
+    </div>
+    <div class="netra-card__body">
+        <dl class="netra-facts">
+            <div>
+                <dt>Performed by</dt>
+                <dd>@job.CreatedByName</dd>
+            </div>
+            <div>
+                <dt>Import started</dt>
+                <dd>@BulkImportStatusUi.When(job.StartedAt)</dd>
+            </div>
+            <div>
+                <dt>Finished</dt>
+                <dd>@(BulkImportStatusUi.When(job.CompletedAt) ?? "Not finished")</dd>
+            </div>
+            <div>
+                <dt>Outcome</dt>
+                <dd>
+                    @await Html.PartialAsync("_StatusBadge", BulkImportStatusUi.JobBadge(job.Status))
+                </dd>
+            </div>
+        </dl>
+        <p class="netra-muted netra-import-result__ownership">
+            Only the operator who uploaded a file can continue its import, so the uploader and
+            the importing user are the same account. Every stage is separately recorded in the
+            audit trail.
+        </p>
+    </div>
+</section>
+
+@if (result.ImportedCases.Count > 0)
+{
+    <section class="netra-card" aria-label="Cases created">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Cases created</h2>
+            <span class="netra-badge netra-badge--success">@result.ImportedRows.ToString("N0")</span>
+        </div>
+        <div class="netra-card__body">
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-import-created">
+                    <caption class="netra-visually-hidden">Cases this import registered</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Case number</th>
+                            <th scope="col">Title</th>
+                            <th scope="col">Open</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var created in result.ImportedCases)
+                        {
+                            <tr>
+                                <td class="is-numeric">@created.RowNumber</td>
+                                <td class="netra-mono">@created.CaseNumber</td>
+                                <td>@created.Title</td>
+                                <td>
+                                    <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                       asp-controller="Cases" asp-action="Details"
+                                       asp-route-id="@created.CaseId">View case</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (result.MoreCasesThanShown)
+            {
+                <p class="netra-muted">
+                    The first @result.ImportedCases.Count of
+                    @result.ImportedRows.ToString("N0") created cases are listed. Every remaining
+                    case is in the register and reachable from the case list.
+                </p>
+            }
+        </div>
+    </section>
+}
+
+@if (result.Issues.Count > 0)
+{
+    <section class="netra-card" aria-label="Problems recorded">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Problems recorded</h2>
+            <span class="netra-badge netra-badge--neutral">@job.ErrorCount</span>
+        </div>
+        <div class="netra-card__body">
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-import-issues">
+                    <caption class="netra-visually-hidden">Problems recorded against this import</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Column</th>
+                            <th scope="col">Severity</th>
+                            <th scope="col">Problem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var issue in result.Issues)
+                        {
+                            <tr>
+                                <td class="is-numeric">
+                                    @(issue.RowNumber == 0 ? "File" : issue.RowNumber.ToString())
+                                </td>
+                                <td class="netra-mono">@issue.Field</td>
+                                <td>
+                                    <span class="netra-badge netra-badge--@BulkImportStatusUi.IssueTone(issue.Severity).ToString().ToLowerInvariant()">
+                                        @BulkImportStatusUi.IssueLabel(issue.Severity)
+                                    </span>
+                                </td>
+                                <td>@issue.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (result.IssuesTruncated)
+            {
+                <p class="netra-muted">
+                    Only the first @BulkImportLimits.MaxShownIssues.ToString("N0") problems are
+                    listed; the rest stay recorded against this import.
+                </p>
+            }
+        </div>
+    </section>
+}
+
+<section class="netra-card netra-import-actions" aria-label="Next steps">
+    <div class="netra-card__body">
+        <a class="netra-btn netra-btn--primary" asp-controller="Cases" asp-action="Index">
+            Go to Crime Cases
+        </a>
+        <a class="netra-btn netra-btn--outline" asp-controller="BulkImport" asp-action="Index">
+            Back to Bulk Import
+        </a>
+        <a class="netra-btn netra-btn--ghost" asp-controller="BulkImport" asp-action="Upload">
+            Start another import
+        </a>
+    </div>
+</section>

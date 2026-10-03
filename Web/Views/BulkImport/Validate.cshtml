@@ -1,0 +1,205 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportValidateViewModel
+@{
+    Layout = "_Layout";
+    var job = Model.Validation.Job;
+    ViewData["Title"] = $"Validation — {job.Name}";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Data", Url = "/BulkImport" },
+        new() { Text = "Bulk Data Import", Url = "/BulkImport" },
+        new() { Text = "Validation", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Validation result",
+    Subtitle = "Every row NETRA could accept, and every row it could not. Nothing has been imported yet."
+})
+
+@await Html.PartialAsync("_JobSummary", job)
+
+<section class="netra-card netra-import-totals" aria-label="Validation totals">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">Totals</h2>
+        <span class="netra-muted">Schema @Model.Validation.SchemaName</span>
+    </div>
+    <div class="netra-card__body">
+        <div class="netra-grid netra-grid--stats">
+            @await Html.PartialAsync("_StatCard", new StatCardModel
+            {
+                Label = "Rows read",
+                Value = Model.Validation.TotalRows.ToString("N0"),
+                Meta = "Data rows in the file"
+            })
+            @await Html.PartialAsync("_StatCard", new StatCardModel
+            {
+                Label = "Accepted",
+                Value = Model.Validation.ValidRows.ToString("N0"),
+                Meta = "Ready to import",
+                Tone = NetraTone.Success
+            })
+            @await Html.PartialAsync("_StatCard", new StatCardModel
+            {
+                Label = "Rejected",
+                Value = Model.Validation.InvalidRows.ToString("N0"),
+                Meta = "Will not be imported",
+                Tone = Model.Validation.InvalidRows > 0 ? NetraTone.Danger : NetraTone.Neutral
+            })
+            @await Html.PartialAsync("_StatCard", new StatCardModel
+            {
+                Label = "Duplicates",
+                Value = Model.Validation.DuplicateRows.ToString("N0"),
+                Meta = "Skipped case numbers",
+                Tone = Model.Validation.DuplicateRows > 0 ? NetraTone.Warning : NetraTone.Neutral
+            })
+            @await Html.PartialAsync("_StatCard", new StatCardModel
+            {
+                Label = "Warnings",
+                Value = Model.Validation.WarningRows.ToString("N0"),
+                Meta = "Accepted, worth checking",
+                Tone = Model.Validation.WarningRows > 0 ? NetraTone.Info : NetraTone.Neutral
+            })
+        </div>
+
+        <p class="netra-muted netra-import-totals__stamp">
+            Validated @BulkImportStatusUi.When(Model.Validation.ValidatedAt).
+        </p>
+    </div>
+</section>
+
+<section class="netra-card" aria-label="Problems found">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">Problems found</h2>
+        <span class="netra-badge netra-badge--neutral">@Model.ShownIssues.Count</span>
+    </div>
+    <div class="netra-card__body">
+        @if (Model.ShownIssues.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = "No problems found",
+                Text = "Every row in this file passed validation and can be reviewed on the preview page.",
+                Icon = NetraIcon.Inbox
+            })
+        }
+        else
+        {
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-import-issues">
+                    <caption class="netra-visually-hidden">Validation problems, one per row</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Column</th>
+                            <th scope="col">Severity</th>
+                            <th scope="col">Problem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var issue in Model.ShownIssues)
+                        {
+                            <tr>
+                                <td class="is-numeric">
+                                    @(issue.RowNumber == 0 ? "File" : issue.RowNumber.ToString())
+                                </td>
+                                <td class="netra-mono">@issue.Field</td>
+                                <td>
+                                    <span class="netra-badge netra-badge--@BulkImportStatusUi.IssueTone(issue.Severity).ToString().ToLowerInvariant()">
+                                        @BulkImportStatusUi.IssueLabel(issue.Severity)
+                                    </span>
+                                </td>
+                                <td>@issue.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.Validation.IssuesTruncated)
+            {
+                <p class="netra-muted netra-import-issues__footnote">
+                    Only the first @BulkImportLimits.MaxShownIssues.ToString("N0") problems are
+                    listed. Every problem is still recorded against this import.
+                </p>
+            }
+        }
+    </div>
+</section>
+
+@if (Model.Validation.ProblemRows.Count > 0)
+{
+    <section class="netra-card" aria-label="Rows that will not be imported">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Rows held back</h2>
+        </div>
+        <div class="netra-card__body">
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-import-problemrows">
+                    <caption class="netra-visually-hidden">Rejected and skipped rows</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Row</th>
+                            <th scope="col">Outcome</th>
+                            <th scope="col">First problem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Validation.ProblemRows)
+                        {
+                            <tr>
+                                <td class="is-numeric">@row.RowNumber</td>
+                                <td>@await Html.PartialAsync("_StatusBadge", BulkImportStatusUi.RowBadge(row.Status))</td>
+                                <td>@(row.FirstIssue ?? "See the problem list above.")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="netra-muted">
+                Row contents are not repeated here. Free-text columns can carry case details, so
+                a problem names the row and the column instead of quoting the value.
+            </p>
+        </div>
+    </section>
+}
+
+<section class="netra-card netra-import-actions" aria-label="Next step">
+    <div class="netra-card__body">
+        @if (Model.ShowImportButton)
+        {
+            <a class="netra-btn netra-btn--primary"
+               asp-controller="BulkImport" asp-action="Preview" asp-route-id="@job.Id">
+                Preview @Model.Validation.ValidRows.ToString("N0") accepted row(s)
+            </a>
+        }
+        else
+        {
+            <p class="netra-alert netra-alert--warning" role="note">
+                <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                <span class="netra-alert__body">
+                    @(job.ImportBlockedBecause
+                      ?? "No row in this file passed validation, so there is nothing to import. "
+                         + "Correct the file and upload it again.")
+                </span>
+            </p>
+        }
+
+        <a class="netra-btn netra-btn--outline"
+           asp-controller="BulkImport" asp-action="Validate" asp-route-id="@job.Id">Re-validate</a>
+
+        <form asp-controller="BulkImport" asp-action="Cancel" asp-route-id="@job.Id" method="post">
+            <button class="netra-btn netra-btn--ghost" type="submit">Cancel this import</button>
+        </form>
+
+        <a class="netra-btn netra-btn--ghost" asp-controller="BulkImport" asp-action="Index">
+            Back to Bulk Import
+        </a>
+    </div>
+</section>

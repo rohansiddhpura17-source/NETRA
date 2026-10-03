@@ -1,0 +1,28 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Not implemented";
+    var moduleName = ViewData["ModuleName"] as string ?? "This module";
+    var icon = ViewData["ModuleIcon"] is NETRA.Web.Models.Navigation.NetraIcon navIcon
+        ? navIcon
+        : NETRA.Web.Models.Navigation.NetraIcon.Default;
+}
+
+<div class="netra-stack">
+    @await Html.PartialAsync("_PageHeader", new NETRA.Web.Models.Ui.PageHeaderModel
+    {
+        Title = moduleName,
+        Subtitle = "This module is scheduled for a later phase and is not yet available."
+    })
+
+    <div class="netra-card">
+        <div class="netra-card__body">
+            @await Html.PartialAsync("_EmptyState", new NETRA.Web.Models.Ui.EmptyStateModel
+            {
+                Icon = icon,
+                Title = $"{moduleName} — not yet implemented",
+                Text = "The NETRA foundation is in place, but this module has not been built yet. " +
+                       "No data is shown because none has been implemented."
+            })
+        </div>
+    </div>
+</div>

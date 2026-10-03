@@ -1,0 +1,249 @@
+@model CaseListViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Crime Cases";
+
+    var crimeTypeOptions = Model.Lookups.CrimeTypes
+        .Select(t => new SelectOption(t.Id.ToString(), t.Label)).ToList();
+    var districtOptions = Model.Lookups.Districts
+        .Select(d => new SelectOption(d.Id.ToString(), d.Label)).ToList();
+
+    // Retain active filters in sort, page and clear links.
+    var query = new Dictionary<string, string?>
+    {
+        ["Search"] = Model.Filter.Search,
+        ["CrimeTypeId"] = Model.Filter.CrimeTypeId?.ToString(),
+        ["DistrictId"] = Model.Filter.DistrictId?.ToString(),
+        ["Status"] = Model.Filter.Status,
+        ["Severity"] = Model.Filter.Severity,
+        ["IncidentDateFrom"] = Model.Filter.IncidentDateFrom?.ToString("yyyy-MM-dd"),
+        ["IncidentDateTo"] = Model.Filter.IncidentDateTo?.ToString("yyyy-MM-dd"),
+        ["SortBy"] = Model.Filter.SortBy
+    };
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Operations", Url = null },
+        new() { Text = "Crime Cases", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Crime Cases",
+    Subtitle = $"{Model.TotalCount} case{(Model.TotalCount == 1 ? "" : "s")} on record.",
+    Actions = (HtmlString)Html.Raw(
+        $"<a class=\"netra-btn netra-btn--primary netra-btn--sm\" asp-controller=\"Cases\" asp-action=\"Create\">" +
+        $"<span>{NetraIconPaths.Render(NetraIcon.Plus)}</span>Register new case</a>")
+})
+
+@* Server-rendered GET filters. No client-side filtering. *@
+<form class="netra-filters netra-filters--band" asp-controller="Cases" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group netra-filters__group--wide">
+        <label class="netra-label" for="Search">Search</label>
+        <input class="netra-input" type="search" id="Search" name="Search"
+               value="@Model.Filter.Search"
+               placeholder="Case number, title or description" />
+    </div>
+
+    <div class="netra-filters__group">
+        <label class="netra-label" for="CrimeTypeId">Crime type</label>
+        <select class="netra-select" id="CrimeTypeId" name="CrimeTypeId">
+            <option value="">All crime types</option>
+            @foreach (var type in Model.Lookups.CrimeTypes)
+            {
+                <option value="@type.Id" selected="@(Model.Filter.CrimeTypeId == type.Id)">@type.Label</option>
+            }
+        </select>
+    </div>
+
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DistrictId">District</label>
+        <select class="netra-select" id="DistrictId" name="DistrictId">
+            <option value="">All districts</option>
+            @foreach (var district in Model.Lookups.Districts)
+            {
+                <option value="@district.Id" selected="@(Model.Filter.DistrictId == district.Id)">@district.Label</option>
+            }
+        </select>
+    </div>
+
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Status">Status</label>
+        <select class="netra-select" id="Status" name="Status">
+            <option value="">All statuses</option>
+            @foreach (var option in CaseListViewModel.StatusOptions)
+            {
+                <option value="@option.Value" selected="@(Model.Filter.Status == option.Value)">@option.Label</option>
+            }
+        </select>
+    </div>
+
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Severity">Severity</label>
+        <select class="netra-select" id="Severity" name="Severity">
+            <option value="">All severities</option>
+            @foreach (var option in CaseListViewModel.SeverityOptions)
+            {
+                <option value="@option.Value" selected="@(Model.Filter.Severity == option.Value)">@option.Label</option>
+            }
+        </select>
+    </div>
+
+    <div class="netra-filters__group">
+        <span class="netra-label">Date range</span>
+        <div class="netra-row" style="gap:var(--netra-space-2);">
+            <input class="netra-input" type="date" id="IncidentDateFrom" name="IncidentDateFrom"
+                   value="@Model.Filter.IncidentDateFrom?.ToString("yyyy-MM-dd")"
+                   aria-label="Incident date from" />
+            <input class="netra-input" type="date" id="IncidentDateTo" name="IncidentDateTo"
+                   value="@Model.Filter.IncidentDateTo?.ToString("yyyy-MM-dd")"
+                   aria-label="Incident date to" />
+        </div>
+    </div>
+
+    <input type="hidden" name="SortBy" value="@Model.Filter.SortBy" />
+
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Cases" asp-action="Index">Clear filters</a>
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply filters</button>
+    </div>
+</form>
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+@if (TempData["Netra.Error"] is string error)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">@error</div>
+    </div>
+}
+
+@* Pagination is rendered into the table footer slot. *@
+@{
+    var pageRoute = new Dictionary<string, string?>(query) { ["page"] = "1" };
+
+    ViewData["CasePagination"] = await Html.PartialAsync("_Pagination", new PaginationModel
+    {
+        Page = Model.Page,
+        TotalPages = Model.TotalPages,
+        TotalItems = Model.TotalCount,
+        PageSize = Model.PageSize,
+        Action = "Index",
+        Controller = "Cases",
+        RouteValues = pageRoute
+    });
+}
+
+<div class="netra-mt-4">
+    @{
+        var columns = new List<TableColumnModel>
+        {
+            new() { Title = "Case number", Key = "CaseNumber" },
+            new() { Title = "Crime type", Key = "CrimeTypeName" },
+            new() { Title = "Incident date", Key = "IncidentDate" },
+            new() { Title = "District", Key = "DistrictName" },
+            new() { Title = "Severity", Key = "Severity" },
+            new() { Title = "Status", Key = "Status" },
+            new() { Title = "Investigator", Key = "Investigator" },
+            new() { Title = "Actions", Key = "Actions" }
+        };
+
+        var rows = new List<TableRowModel>();
+
+        foreach (var item in Model.Items)
+        {
+            var statusBadge = (HtmlString)Html.Raw(
+                $"<span class=\"netra-dotline{(item.StatusTone == NetraTone.Neutral ? " netra-muted" : "")}\">" +
+                $"<span class=\"netra-dotline__dot {ToneTextClass(item.StatusTone)}\" aria-hidden=\"true\"></span>" +
+                $"{HtmlEncoder.Default.Encode(NetraDisplay.Words(item.Status))}</span>");
+
+            var severityBadge = await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+            {
+                Text = item.Severity,
+                Tone = item.SeverityTone,
+                ShowDot = false
+            });
+
+            var caseNumber = (HtmlString)Html.Raw(
+                $"<a class=\"netra-table__primary\" asp-controller=\"Cases\" asp-action=\"Details\" " +
+                $"asp-route-id=\"{item.Id}\">{HtmlEncoder.Default.Encode(item.CaseNumber)}</a>" +
+                $"<span class=\"netra-cellsub\">{HtmlEncoder.Default.Encode(item.Title)}</span>");
+
+            var investigator = item.InvestigatorName == "Unassigned"
+                ? (HtmlString)Html.Raw("<span class=\"netra-muted\">Unassigned</span>")
+                : (HtmlString)Html.Raw(
+                    $"<span class=\"netra-row\" style=\"gap:var(--netra-space-2);\">" +
+                    $"<span class=\"netra-avatar\" aria-hidden=\"true\">{InitialsOf(item.InvestigatorName)}</span>" +
+                    $"<span>{HtmlEncoder.Default.Encode(item.InvestigatorName)}</span></span>");
+
+            var editLink = (HtmlString)Html.Raw(
+                $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" asp-controller=\"Cases\" " +
+                $"asp-action=\"Edit\" asp-route-id=\"{item.Id}\">Edit</a>");
+
+            rows.Add(new TableRowModel
+            {
+                Cells = new Dictionary<string, object?>
+                {
+                    ["CaseNumber"] = caseNumber,
+                    ["CrimeTypeName"] = item.CrimeTypeName,
+                    ["IncidentDate"] = item.IncidentDate.ToString("dd MMM yyyy"),
+                    ["DistrictName"] = item.DistrictName,
+                    ["Severity"] = severityBadge,
+                    ["Status"] = statusBadge,
+                    ["Investigator"] = investigator,
+                    ["Actions"] = editLink
+                }
+            });
+        }
+
+        var table = new DataTableModel
+        {
+            Caption = "Crime cases",
+            Columns = columns,
+            Rows = rows,
+            SortController = "Cases",
+            SortAction = "Index",
+            FooterViewDataKey = "CasePagination",
+            Empty = new EmptyStateModel
+            {
+                Icon = NetraIcon.Cases,
+                Title = Model.HasFilters ? "No cases match these filters" : "No crime cases recorded",
+                Text = Model.HasFilters
+                    ? "Adjust or clear the filters to widen the search."
+                    : "Register the first crime case to begin building the case record."
+            }
+        };
+    }
+
+    @await Html.PartialAsync("_DataTable", table)
+</div>
+
+@functions {
+    private static string ToneTextClass(NetraTone tone) => tone switch
+    {
+        NetraTone.Primary => "netra-text-primary",
+        NetraTone.Info => "netra-text-info",
+        NetraTone.Success => "netra-text-success",
+        NetraTone.Warning => "netra-text-warning",
+        NetraTone.Danger => "netra-text-danger",
+        _ => "netra-faint"
+    };
+
+    private static string InitialsOf(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var first = parts.Length > 0 ? parts[0][0].ToString() : string.Empty;
+        var last = parts.Length > 1 ? parts[^1][0].ToString() : string.Empty;
+        return (first + last).ToUpperInvariant();
+    }
+}

@@ -1,0 +1,42 @@
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportUploadViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Upload CSV";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Data", Url = "/BulkImport" },
+        new() { Text = "Bulk Data Import", Url = "/BulkImport" },
+        new() { Text = "Upload", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Upload a case CSV",
+    Subtitle = "The file is stored and queued for validation. Uploading creates no case records."
+})
+
+<div class="netra-import-upload-layout">
+    <section class="netra-card" aria-label="Upload form">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Upload</h2>
+        </div>
+        <div class="netra-card__body">
+            @await Html.PartialAsync("_UploadForm", Model.Form)
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="What the file must contain">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">What the file must contain</h2>
+        </div>
+        <div class="netra-card__body">
+            @await Html.PartialAsync("_CsvRequirements", Model.Requirements)
+        </div>
+    </section>
+</div>

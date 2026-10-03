@@ -1,0 +1,84 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels
+@{
+    var user = ViewData["CurrentUser"] as CurrentUserViewModel;
+    var unreadCount = ViewData["UnreadNotificationCount"] as int? ?? 0;
+
+    // Drawer toggle for narrow viewports (CSS-only checkbox).
+    var toggleId = "netra-sidebar-toggle";
+}
+
+<header class="netra-topbar">
+    <label for="@toggleId" class="netra-iconbtn netra-only-narrow" style="cursor:pointer;"
+           title="Toggle navigation">
+        @Html.Raw(NetraIconPaths.Render(NetraIcon.Menu))
+    </label>
+
+    @* Server-rendered search: a plain GET form. No client-side behaviour required. *@
+    <div class="netra-topbar__search">
+        <form asp-controller="Home" asp-action="Search" method="get" role="search">
+            <label class="netra-sr-only" for="netra-global-search">Search NETRA</label>
+            <div class="netra-field__control">
+                <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Search))</span>
+                <input type="search"
+                       id="netra-global-search"
+                       name="q"
+                       class="netra-input"
+                       placeholder="Search cases, persons, locations…"
+                       autocomplete="off" />
+            </div>
+        </form>
+    </div>
+
+    <div class="netra-topbar__actions">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a class="netra-iconbtn" asp-controller="Notifications" asp-action="Index"
+               title="Notifications" aria-label="Notifications">
+                @Html.Raw(NetraIconPaths.Render(NetraIcon.Bell))
+                @if (unreadCount > 0)
+                {
+                    <span class="netra-iconbtn__dot" aria-hidden="true"></span>
+                    <span class="netra-sr-only">@unreadCount unread notification@(unreadCount == 1 ? "" : "s")</span>
+                }
+                else
+                {
+                    <span class="netra-sr-only">No unread notifications</span>
+                }
+            </a>
+
+            <a class="netra-iconbtn" asp-controller="Support" asp-action="Index"
+               title="Support" aria-label="Support">
+                @Html.Raw(NetraIconPaths.Render(NetraIcon.Help))
+            </a>
+
+            @if (user != null)
+            {
+                <div class="netra-userchip">
+                    <span class="netra-avatar" aria-hidden="true">@user.Initials</span>
+                    <span class="netra-userchip__meta">
+                        <span class="netra-userchip__name">@user.DisplayName</span>
+                        @if (!string.IsNullOrWhiteSpace(user.PrimaryRole))
+                        {
+                            <span class="netra-userchip__role">@user.PrimaryRole</span>
+                        }
+                    </span>
+                </div>
+
+                @* POST-only logout: never a GET, so it cannot be triggered by a link or prefetch. *@
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="netra-btn netra-btn--ghost netra-btn--sm"
+                            title="Sign out">
+                        Sign out
+                    </button>
+                </form>
+            }
+        }
+        else
+        {
+            <a class="netra-btn netra-btn--primary netra-btn--sm"
+               asp-controller="Account" asp-action="Login">Sign in</a>
+        }
+    </div>
+</header>

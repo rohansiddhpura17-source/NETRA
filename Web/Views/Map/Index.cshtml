@@ -1,0 +1,240 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Analytics
+@using NETRA.Web.Models.ViewModels.Map
+@using NETRA.Web.Services.Maps
+@model NETRA.Web.Models.ViewModels.Map.MapViewModel
+@inject IMapRenderer MapRenderer
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Crime Intelligence Map";
+
+    var routeValues = new Dictionary<string, string?>
+    {
+        ["DateFrom"] = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+        ["DateTo"] = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+        ["DistrictId"] = Model.Filter.DistrictId?.ToString(),
+        ["CrimeTypeId"] = Model.Filter.CrimeTypeId?.ToString(),
+        ["Severity"] = Model.Filter.Severity
+    };
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Crime Map", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Crime Intelligence Map",
+    Subtitle = Model.HasPlottableIncidents
+        ? $"{Model.Data.TotalIncidents} plotted incident{(Model.Data.TotalIncidents == 1 ? "" : "s")} · " +
+          $"{Model.Data.ActiveIncidents} active · {Model.Data.Hotspots.Count} hotspot" +
+          $"{(Model.Data.Hotspots.Count == 1 ? "" : "s")} · {Model.WindowLabel}. " +
+          "Server-rendered view of recorded incident coordinates."
+        : $"No plottable incidents for {Model.WindowLabel}."
+})
+
+@* Server-rendered GET filters — no client-side JavaScript. *@
+<form class="netra-filters netra-filters--band" id="map-filters"
+      asp-controller="Map" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateFrom">Date from</label>
+        <input class="netra-input" type="date" id="DateFrom" name="DateFrom"
+               value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateTo">Date to</label>
+        <input class="netra-input" type="date" id="DateTo" name="DateTo"
+               value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DistrictId">District</label>
+        <select class="netra-select" id="DistrictId" name="DistrictId">
+            <option value="">All districts</option>
+            @foreach (var district in Model.Lookups.Districts)
+            {
+                <option value="@district.Id" selected="@(Model.Filter.DistrictId == district.Id)">@district.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="CrimeTypeId">Crime type</label>
+        <select class="netra-select" id="CrimeTypeId" name="CrimeTypeId">
+            <option value="">All crime types</option>
+            @foreach (var type in Model.Lookups.CrimeTypes)
+            {
+                <option value="@type.Id" selected="@(Model.Filter.CrimeTypeId == type.Id)">@type.Name</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Severity">Severity</label>
+        <select class="netra-select" id="Severity" name="Severity">
+            <option value="">All severities</option>
+            @foreach (var severity in AnalyticsFilterViewModel.SeverityOptions)
+            {
+                <option value="@severity" selected="@(Model.Filter.Severity == severity)">@severity</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Map" asp-action="Index">Clear filters</a>
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+    </div>
+</form>
+
+@if (ViewContext.ModelState["DateTo"]?.Errors.Count > 0)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">
+        @foreach (var error in ViewContext.ModelState["DateTo"]!.Errors)
+        {
+            @error.ErrorMessage
+            <br />
+        }
+    </div>
+}
+
+<div class="netra-grid netra-grid--stats netra-mt-4">
+    @foreach (var card in Model.SummaryCards)
+    {
+        @await Html.PartialAsync("_StatCard", card)
+    }
+</div>
+
+<div class="netra-grid netra-grid--form netra-mt-4">
+    <div class="netra-stack">
+        <div class="netra-card netra-map-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+                    Incident Distribution
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.WindowLabel</span>
+            </div>
+            <div class="netra-card__body netra-map-card__body">
+                @if (Model.Map is { } map)
+                {
+                    @MapRenderer.Render(map)
+
+                    <div class="netra-map-legend" role="group" aria-label="Map legend">
+                        <span class="netra-map-legend__heading">Severity</span>
+                        <span class="netra-map-legend__item"><span class="netra-map-legend__dot netra-map-legend__dot--critical"></span>Critical</span>
+                        <span class="netra-map-legend__item"><span class="netra-map-legend__dot netra-map-legend__dot--high"></span>High</span>
+                        <span class="netra-map-legend__item"><span class="netra-map-legend__dot netra-map-legend__dot--medium"></span>Medium</span>
+                        <span class="netra-map-legend__item"><span class="netra-map-legend__dot netra-map-legend__dot--low"></span>Low</span>
+                        <span class="netra-map-legend__item"><span class="netra-map-legend__halo"></span>Hotspot (3+ incidents)</span>
+                    </div>
+                }
+                else
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No incidents to plot",
+                        Text = "No crime records with usable coordinates are available for the selected period and filters.",
+                        Icon = NetraIcon.Map
+                    })
+                }
+            </div>
+            <div class="netra-card__footer netra-row netra-row--between">
+                <span class="netra-muted">
+                    Schematic projection of recorded coordinates — not a live interactive GIS system.
+                </span>
+                @if (Model.Data.HiddenRecordCount > 0)
+                {
+                    <span class="netra-badge netra-badge--warning">
+                        @Model.Data.HiddenRecordCount record@(Model.Data.HiddenRecordCount == 1 ? "" : "s") without usable coordinates
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-stack">
+        @if (Model.SelectedIncident is { } selected)
+        {
+            <div class="netra-card netra-card--highlight">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                        Selected Incident
+                    </h2>
+                    <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                       asp-controller="Map" asp-action="Index" asp-all-route-data="routeValues">Clear</a>
+                </div>
+                <div class="netra-card__body">
+                    <dl class="netra-facts">
+                        <div><dt>Case</dt><dd><a asp-controller="Cases" asp-action="Details" asp-route-id="@selected.CaseId">@selected.CaseNumber</a></dd></div>
+                        <div><dt>Title</dt><dd>@selected.Title</dd></div>
+                        <div><dt>Crime type</dt><dd>@selected.CrimeTypeName</dd></div>
+                        <div><dt>Severity</dt><dd>@selected.SeverityLabel</dd></div>
+                        <div><dt>Incident date</dt><dd>@selected.IncidentDateLabel</dd></div>
+                        <div><dt>Location</dt><dd>@selected.LocationName</dd></div>
+                        <div><dt>District</dt><dd>@selected.DistrictName</dd></div>
+                    </dl>
+                </div>
+                <div class="netra-card__footer">
+                    <a class="netra-btn netra-btn--outline netra-btn--sm"
+                       asp-controller="Cases" asp-action="Details" asp-route-id="@selected.CaseId">Open case record</a>
+                </div>
+            </div>
+        }
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                    Recent Incidents
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.Incidents.Count</span>
+            </div>
+            <div class="netra-card__body">
+                @if (Model.Incidents.Count == 0)
+                {
+                    @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                    {
+                        Title = "No incidents",
+                        Text = "No plottable incidents for the selected period and filters.",
+                        Icon = NetraIcon.Inbox
+                    })
+                }
+                else
+                {
+                    <ul class="netra-incident-list" aria-label="Incident quick view">
+                        @foreach (var incident in Model.Incidents.Take(15))
+                        {
+                            <li class="netra-incident @(incident.CaseId == Model.SelectedCaseId ? "netra-incident--active" : null)">
+                                <div class="netra-incident__head">
+                                    <a asp-controller="Cases" asp-action="Details" asp-route-id="@incident.CaseId">@incident.CaseNumber</a>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                        {
+                                            Text = incident.SeverityLabel,
+                                            Tone = incident.SeverityTone
+                                        })
+                                </div>
+                                <div class="netra-muted">@incident.Title</div>
+                                <div class="netra-incident__foot">
+                                    <span class="netra-cellsub">@incident.CrimeTypeName · @incident.IncidentDateLabel</span>
+                                    @{ routeValues["CaseId"] = incident.CaseId.ToString(); }
+                                    <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                       asp-controller="Map" asp-action="Index"
+                                       asp-all-route-data="routeValues">View</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                    @if (Model.Incidents.Count > 15)
+                    {
+                        <p class="netra-muted netra-mt-2">
+                            Showing the 15 most recent of @Model.Incidents.Count plotted incidents.
+                        </p>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

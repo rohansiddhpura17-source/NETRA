@@ -1,0 +1,152 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model SecuritySettingsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Security settings";
+
+    var lastSignIn = Model.LastLoginAt is { } loginAt
+        ? $"{loginAt:dd MMM yyyy HH:mm} UTC"
+        : "Not recorded by this deployment";
+
+    var emailOnFile = string.IsNullOrWhiteSpace(Model.Email) ? "(none on file)" : Model.Email;
+
+    var lockoutState = Model.LockoutExpiresAt is { } expires
+        ? $"Locked out until {expires.ToUniversalTime():dd MMM yyyy HH:mm} UTC"
+        : "Locked out";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "Security", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Security",
+    Subtitle = "Change your own password. NETRA does not offer a password reset here: the account " +
+        "owner's password is the only secret these pages accept, and it is never shown back.",
+    Meta = new HtmlString(Model.UserName)
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+
+<form asp-controller="Settings" asp-action="Security" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-settings__form">
+        @if (Model.IsLockedOut)
+        {
+            <div class="netra-alert netra-alert--danger" role="alert">
+                <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                <div class="netra-alert__body">
+                    This account is temporarily locked out by Identity after repeated failed sign-ins.
+                    Sign-in is refused until the lockout expires; a System Administrator can also clear
+                    it from User Management.
+                </div>
+            </div>
+        }
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                    Account state
+                </h2>
+                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                {
+                    Text = Model.HasPassword ? "Password set" : "No password",
+                    Tone = Model.HasPassword ? NetraTone.Success : NetraTone.Warning
+                })
+            </div>
+            <div class="netra-card__body">
+                <dl class="netra-facts">
+                    <div>
+                        <dt>Signed in as</dt>
+                        <dd>@Model.UserName</dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd>@emailOnFile</dd>
+                    </div>
+                    <div>
+                        <dt>Email confirmed</dt>
+                        <dd>@(Model.EmailConfirmed ? "Yes" : "No")</dd>
+                    </div>
+                    <div>
+                        <dt>Two-factor authentication</dt>
+                        <dd>@(Model.TwoFactorEnabled ? "Enrolled" : "Not enrolled")</dd>
+                    </div>
+                    <div>
+                        <dt>Lockout</dt>
+                        <dd>@(Model.IsLockedOut ? lockoutState : "Not locked out")</dd>
+                    </div>
+                    <div>
+                        <dt>Last sign-in</dt>
+                        <dd>@lastSignIn</dd>
+                    </div>
+                </dl>
+                <p class="netra-settings__note netra-mt-3">
+                    Nothing on this page reads or displays a password hash, a security stamp or a
+                    token. Two-factor enrolment has no authenticator delivery in this deployment, so
+                    it is reported but not offered.
+                </p>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Key))</span>
+                    Change password
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-settings__note">
+                    @Model.PasswordPolicy.Describe() Identity on the server checks this, so the
+                    message you get is the rule that actually applies.
+                </p>
+
+                <div class="netra-field netra-mt-3 @(ViewData.ModelState[nameof(Model.CurrentPassword)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="CurrentPassword">Current password</label>
+                    <input class="netra-input" asp-for="CurrentPassword" type="password"
+                           autocomplete="current-password" />
+                    <span asp-validation-for="CurrentPassword" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-settings__pair netra-mt-3">
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.NewPassword)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="NewPassword">New password</label>
+                        <input class="netra-input" asp-for="NewPassword" type="password"
+                               autocomplete="new-password" />
+                        <span asp-validation-for="NewPassword" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState[nameof(Model.ConfirmPassword)]?.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="ConfirmPassword">Confirm new password</label>
+                        <input class="netra-input" asp-for="ConfirmPassword" type="password"
+                               autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmPassword" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" href="/settings">Back to settings</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Change password</button>
+    </div>
+</form>

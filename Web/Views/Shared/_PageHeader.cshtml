@@ -1,0 +1,20 @@
+@using NETRA.Web.Models.Ui
+@model PageHeaderModel
+
+<div class="netra-pageheader">
+    <div>
+        <h1 class="netra-pageheader__title">@Model.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+        {
+            <p class="netra-pageheader__subtitle">@Model.Subtitle</p>
+        }
+        @if (Model.Meta != null)
+        {
+            <div class="netra-pageheader__meta">@Model.Meta</div>
+        }
+    </div>
+    @if (Model.Actions != null)
+    {
+        <div class="netra-pageheader__actions">@Model.Actions</div>
+    }
+</div>

@@ -1,0 +1,133 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Alerts
+@model NETRA.Web.Models.ViewModels.Alerts.NotificationsIndexViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notifications";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "Notifications", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Notifications",
+    Subtitle = Model.UnreadCount == 0
+        ? "Personal notification centre — every item shown here was addressed to you."
+        : $"You have {Model.UnreadCount} unread notification{(Model.UnreadCount == 1 ? "" : "s")}."
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+<div class="netra-filters netra-filters--band netra-mt-4">
+    <div class="netra-filters__group">
+        <a class="netra-btn netra-btn--@(Model.UnreadOnly ? "ghost" : "primary") netra-btn--sm"
+           asp-controller="Notifications" asp-action="Index">All notifications</a>
+    </div>
+    <div class="netra-filters__group">
+        <a class="netra-btn netra-btn--@(Model.UnreadOnly ? "primary" : "ghost") netra-btn--sm"
+           asp-controller="Notifications" asp-action="Index" asp-route-unreadOnly="true">Unread only</a>
+    </div>
+    @if (Model.UnreadCount > 0)
+    {
+        <div class="netra-filters__actions">
+            <form class="netra-inline-form" method="post" action="/notifications/read-all">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="netra-btn netra-btn--ghost netra-btn--sm">Mark All Read</button>
+            </form>
+        </div>
+    }
+</div>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Bell))</span>
+            Inbox
+        </h2>
+        <span class="netra-badge netra-badge--neutral">@Model.TotalCount total · @Model.UnreadCount unread</span>
+    </div>
+    <div class="netra-card__body">
+        @if (!Model.HasItems)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = Model.UnreadOnly ? "No unread notifications" : "No notifications yet",
+                Text = Model.UnreadOnly
+                    ? "Every notification addressed to you has been read. New items appear here when alerts are " +
+                      "generated for the categories you receive."
+                    : "Notifications appear here when an alert is generated that matches your role and notification " +
+                      "preferences. Delivery is in-application only.",
+                Icon = NetraIcon.Inbox,
+                ActionText = Model.UnreadOnly ? "Show all notifications" : null,
+                ActionUrl = Model.UnreadOnly ? "/notifications" : null
+            })
+        }
+        else
+        {
+            <div class="netra-notifications">
+                @foreach (var item in Model.Notifications)
+                {
+                    <div class="netra-notification @(item.IsRead ? "" : "netra-notification--unread")">
+                        <div class="netra-notification__head">
+                            <span class="netra-badge netra-badge--neutral">@item.CategoryLabel</span>
+                            @if (item.AlertSeverityLabel is { } severityLabel)
+                            {
+                                <span class="netra-badge netra-badge--@item.AlertSeverityTone.ToString().ToLowerInvariant()">@severityLabel</span>
+                            }
+                            <span class="netra-notification__time">@item.CreatedAtText</span>
+                        </div>
+                        <h3 class="netra-notification__title">@item.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(item.Message))
+                        {
+                            <p class="netra-notification__message">@item.Message</p>
+                        }
+                        <div class="netra-notification__actions">
+                            @if (item.AlertId is { } alertId)
+                            {
+                                <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                   asp-controller="Alerts" asp-action="Details" asp-route-id="@alertId">
+                                    View alert
+                                </a>
+                            }
+                            @if (!item.IsRead)
+                            {
+                                <form class="netra-inline-form" method="post" action="/notifications/read/@item.Id">
+                                    @Html.AntiForgeryToken()
+                                    @if (Model.UnreadOnly)
+                                    {
+                                        <input type="hidden" name="unreadOnly" value="true" />
+                                    }
+                                    <input type="hidden" name="page" value="@Model.Page" />
+                                    <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">
+                                        Mark Read
+                                    </button>
+                                </form>
+                            }
+                            else if (item.ReadAtText is { } readAt)
+                            {
+                                <span class="netra-muted">Read @readAt</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.Pagination)

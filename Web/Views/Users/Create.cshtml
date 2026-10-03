@@ -1,0 +1,148 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@model NETRA.Web.Models.ViewModels.Users.CreateUserViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "New Account";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "User Management", Url = "/Users" },
+        new() { Text = "New account", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "New Account",
+    Subtitle = "Creates an ASP.NET Identity account, grants it at least one NETRA role and signs " +
+        "nothing in yet. The password is handed to Identity and never stored in clear text, " +
+        "logged or written to the audit trail."
+})
+
+<form asp-controller="Users" asp-action="Create" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-users__form">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                    Identity
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.UserName)) ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="UserName">Username</label>
+                    <input class="netra-input" asp-for="UserName" type="text" maxlength="256"
+                           autocomplete="off" required />
+                    <p class="netra-field__hint">
+                        Sign-in name. It cannot be changed later, and it is stored case-insensitively.
+                    </p>
+                    <span asp-validation-for="UserName" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Email)) ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="Email">Email address</label>
+                    <input class="netra-input" asp-for="Email" type="email" maxlength="256" required />
+                    <span asp-validation-for="Email" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Password)) ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="Password">Temporary password</label>
+                    <input class="netra-input" asp-for="Password" type="password"
+                           autocomplete="new-password" required />
+                    <p class="netra-field__hint">
+                        Identity requires at least 8 characters with an uppercase letter, a lowercase
+                        letter, a digit and a non-alphanumeric character.
+                    </p>
+                    <span asp-validation-for="Password" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.ConfirmPassword)) ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="ConfirmPassword">Confirm password</label>
+                    <input class="netra-input" asp-for="ConfirmPassword" type="password"
+                           autocomplete="new-password" required />
+                    <span asp-validation-for="ConfirmPassword" class="netra-field__error"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Persons))</span>
+                    Officer details
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-users__pair">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.FirstName)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="FirstName">First name</label>
+                        <input class="netra-input" asp-for="FirstName" type="text" maxlength="100" required />
+                        <span asp-validation-for="FirstName" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.LastName)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="LastName">Last name</label>
+                        <input class="netra-input" asp-for="LastName" type="text" maxlength="100" required />
+                        <span asp-validation-for="LastName" class="netra-field__error"></span>
+                    </div>
+                </div>
+
+                <div class="netra-users__pair">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.BadgeNumber)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="BadgeNumber">Badge number (optional)</label>
+                        <input class="netra-input" asp-for="BadgeNumber" type="text" maxlength="50" />
+                        <p class="netra-field__hint">Must be unique across accounts when supplied.</p>
+                        <span asp-validation-for="BadgeNumber" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Rank)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="Rank">Rank (optional)</label>
+                        <input class="netra-input" asp-for="Rank" type="text" maxlength="100"
+                               placeholder="e.g. Inspector" />
+                        <span asp-validation-for="Rank" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                    NETRA roles
+                </h2>
+                <span class="netra-badge netra-badge--neutral">At least one required</span>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-muted netra-users__roles-hint">
+                    Only the roles that exist in the Identity role store are offered, so no new
+                    operational role can be invented from this form.
+                </p>
+                <div class="netra-users__roles-list">
+                    @foreach (var role in Model.RoleOptions)
+                    {
+                        <label class="netra-check" for="role-@role.Replace(" ", "-")">
+                            <input type="checkbox" id="role-@role.Replace(" ", "-")"
+                                   name="Roles" value="@role"
+                                   checked="@(Model.Roles.Contains(role))" />
+                            <span>@role</span>
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="Roles" class="netra-field__error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" asp-controller="Users" asp-action="Index">Cancel</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Create account</button>
+    </div>
+</form>

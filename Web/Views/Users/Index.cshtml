@@ -1,0 +1,194 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Application.Users
+@model NETRA.Web.Models.ViewModels.Users.UsersIndexViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "User Management";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "User Management", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "User Management",
+    Subtitle = "NETRA accounts live in ASP.NET Identity: this page lists them, creates new ones, " +
+        "edits profile details, assigns the seeded NETRA roles and activates or deactivates access. " +
+        "Every change here is server-validated and written to the audit trail.",
+    Actions = (HtmlString)Html.Raw(
+        "<a class=\"netra-btn netra-btn--primary netra-btn--sm\" href=\"/Users/Create\">" +
+        $"<span class=\"netra-btn__icon\">{NetraIconPaths.Render(NetraIcon.Plus)}</span>New account</a>")
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+@* Server-side GET filters. Each control posts a query string; nothing is filtered in the browser. *@
+<form class="netra-filters netra-filters--band netra-mt-4" id="user-filters"
+      asp-controller="Users" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group netra-filters__group--wide">
+        <label class="netra-label" for="search">Search accounts</label>
+        <input class="netra-input" type="search" id="search" name="search"
+               value="@Model.Filter.Search"
+               placeholder="Name, username, email, badge or phone" maxlength="100" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="role">Role</label>
+        <select class="netra-select" id="role" name="role">
+            <option value="">All roles</option>
+            @foreach (var role in Model.RoleOptions)
+            {
+                <option value="@role" selected="@(Model.Filter.Role == role)">@role</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="status">Account status</label>
+        <select class="netra-select" id="status" name="status">
+            <option value="">Any status</option>
+            @foreach (var status in NETRA.Web.Models.ViewModels.Users.UserListFilterViewModel.StatusOptions)
+            {
+                <option value="@status" selected="@(Model.Filter.Status == status)">
+                    @NetraDisplay.Words(status.ToString())
+                </option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__actions">
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+        @if (Model.HasActiveFilters)
+        {
+            <a class="netra-btn netra-btn--ghost netra-btn--sm"
+               asp-controller="Users" asp-action="Index">Clear filters</a>
+        }
+    </div>
+</form>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Users))</span>
+            Accounts
+        </h2>
+        <span class="netra-badge netra-badge--neutral">
+            @Model.TotalCount account@(Model.TotalCount == 1 ? "" : "s")
+        </span>
+    </div>
+    <div class="netra-card__body">
+        @if (Model.Users.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = Model.HasActiveFilters
+                    ? "No accounts match the selected filters"
+                    : "No accounts yet",
+                Text = Model.HasActiveFilters
+                    ? "No NETRA account matches this search, role or status. Clear the filters to see " +
+                      "the full list of accounts."
+                    : "Accounts are provisioned here, or seeded by the deployment's identity seeder. " +
+                      "Every NETRA role in the role filter comes from the Identity role store.",
+                Icon = NetraIcon.Users,
+                ActionText = Model.HasActiveFilters ? null : "New account",
+                ActionUrl = Model.HasActiveFilters ? null : "/Users/Create"
+            })
+        }
+        else
+        {
+            <div class="netra-tablewrap">
+                <table class="netra-table netra-users">
+                    <caption class="netra-visually-hidden">NETRA user accounts</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">User</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role(s)</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Created</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Users)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="netra-table__primary"
+                                       asp-controller="Users" asp-action="Details" asp-route-id="@row.User.Id">
+                                        @row.User.FullName
+                                    </a>
+                                    <span class="netra-muted netra-mono">@row.User.UserName</span>
+                                    @if (row.User.IsCurrentActor)
+                                    {
+                                        <span class="netra-badge netra-badge--primary">Your account</span>
+                                    }
+                                </td>
+                                <td class="netra-muted">@row.EmailOrDash</td>
+                                <td>
+                                    @if (row.User.Roles.Count == 0)
+                                    {
+                                        <span class="netra-muted">No roles</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="netra-users__roles">
+                                            @foreach (var role in row.User.Roles)
+                                            {
+                                                <span class="netra-badge netra-badge--neutral">@role</span>
+                                            }
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                    {
+                                        Text = row.StatusLabel,
+                                        Tone = row.StatusTone
+                                    })
+                                </td>
+                                <td class="netra-muted">@row.CreatedAtText</td>
+                                <td>
+                                    <div class="netra-users__actions">
+                                        <a class="netra-btn netra-btn--primary netra-btn--sm"
+                                           asp-controller="Users" asp-action="Details" asp-route-id="@row.User.Id">View</a>
+                                        <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                           asp-controller="Users" asp-action="Edit" asp-route-id="@row.User.Id">Edit</a>
+                                        @if (!row.User.IsCurrentActor)
+                                        {
+                                            @* State changes are POST-only and carry an anti-forgery token. *@
+                                            <form class="netra-inline-form"
+                                                  asp-controller="Users"
+                                                  asp-action="@(row.IsDeactivated ? "Activate" : "Deactivate")"
+                                                  asp-route-id="@row.User.Id" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="netra-btn netra-btn--ghost netra-btn--sm"
+                                                        aria-label="@(row.IsDeactivated ? "Activate " + row.User.FullName : "Deactivate " + row.User.FullName)">
+                                                    @(row.IsDeactivated ? "Activate" : "Deactivate")
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.Pagination)

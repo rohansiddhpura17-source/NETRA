@@ -1,0 +1,125 @@
+@using NETRA.Application.Settings
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model AppearanceSettingsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Appearance settings";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "Appearance", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Appearance",
+    Subtitle = "Two choices the server applies to every page it renders. The palette itself is fixed " +
+        "to the NETRA dark theme, so there is no colour or font picker to offer."
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+
+<form asp-controller="Settings" asp-action="Appearance" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-settings__form">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+                    Row spacing
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.DensityLabel</span>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-settings__note">
+                    Comfortable is the default. Compact tightens the spacing scale the whole theme is
+                    built from, so cards, tables and the sidebar all fit more rows on screen.
+                </p>
+
+                <div class="netra-settings__rows netra-mt-3">
+                    @foreach (var option in AppearanceSettingsViewModel.DensityOptions)
+                    {
+                        <div class="netra-settings__row">
+                            <label class="netra-settings__row-label netra-check" for="density-@option">
+                                <input type="radio" id="density-@option"
+                                       name="Density" value="@option"
+                                       checked="@(Model.Density == option)" />
+                                <span>@NetraDisplay.Words(option.ToString())</span>
+                            </label>
+                            <span class="netra-settings__row-meta">
+                                @(option == UiDensity.Comfortable
+                                    ? "Standard padding"
+                                    : "Tighter padding, more rows per screen")
+                            </span>
+                        </div>
+                    }
+                </div>
+                <span asp-validation-for="Density" class="netra-field__error"></span>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Sliders))</span>
+                    Motion
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.MotionLabel</span>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-settings__row">
+                    <label class="netra-settings__row-label netra-check" for="reduced-motion">
+                        <input type="checkbox" id="reduced-motion" name="ReducedMotion" value="true"
+                               checked="@Model.ReducedMotion" />
+                        <span>Reduce motion</span>
+                    </label>
+                    <span class="netra-settings__row-meta">
+                        Hover fades and the sidebar drawer slide
+                    </span>
+                </div>
+                <p class="netra-settings__note netra-mt-3">
+                    Removes the theme's hover fades and the sidebar drawer slide. An unchecked
+                    checkbox simply posts nothing, which is how the setting returns to full motion.
+                </p>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+                    How this is stored
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-settings__note">
+                    Both choices are saved as two rows in your own settings record and are applied by
+                    a class on the page body when the server renders it. No stylesheet is uploaded or
+                    generated, no browser storage is used, and the change is written to the audit
+                    trail with the before and after values.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" href="/settings">Back to settings</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Save appearance</button>
+    </div>
+</form>

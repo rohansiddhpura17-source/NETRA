@@ -1,0 +1,82 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels
+@model LoginViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Sign in";
+}
+
+<div class="netra-auth__card">
+    <div class="netra-auth__brand">
+        <span class="netra-auth__mark">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+        <span class="netra-auth__name">NETRA</span>
+        <span class="netra-auth__tagline">Neural Threat Intelligence &amp; Response Analytics</span>
+    </div>
+
+    <div class="netra-auth__body">
+        <h1 class="netra-auth__title">Sign in</h1>
+        <p class="netra-auth__lead">Authenticate with your authorised NETRA credentials to continue.</p>
+
+        <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+        <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("UserName") && ViewData.ModelState["UserName"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="UserName">Username or email</label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                    <input class="netra-input"
+                           asp-for="UserName"
+                           type="text"
+                           autocomplete="username"
+                           autofocus
+                           required
+                           aria-describedby="username-error" />
+                </div>
+                <span id="username-error" asp-validation-for="UserName" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("Password") && ViewData.ModelState["Password"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <div class="netra-row netra-row--between">
+                    <label class="netra-label" asp-for="Password">Password</label>
+                    <a class="netra-auth__backlink"
+                       asp-controller="Account"
+                       asp-action="ForgotPassword">Forgot password?</a>
+                </div>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Lock))</span>
+                    <input class="netra-input"
+                           asp-for="Password"
+                           type="password"
+                           autocomplete="current-password"
+                           required
+                           aria-describedby="password-error" />
+                </div>
+                <span id="password-error" asp-validation-for="Password" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field">
+                <label class="netra-check">
+                    <input asp-for="RememberMe" type="checkbox" />
+                    <span>Remember me</span>
+                </label>
+            </div>
+
+            <button type="submit" class="netra-btn netra-btn--primary netra-btn--lg netra-btn--block">
+                Sign in
+            </button>
+        </form>
+    </div>
+
+    <div class="netra-auth__foot">
+        <span class="netra-classified">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))
+            Authorized access only
+        </span>
+        <span class="netra-faint" style="font-size:11px;">
+            All activity is monitored and recorded.
+        </span>
+    </div>
+</div>

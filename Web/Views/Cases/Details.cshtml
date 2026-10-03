@@ -1,0 +1,742 @@
+@model CaseDetailsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = Model.Case.CaseNumber;
+    var c = Model.Case;
+
+    // Association options exclude ones already linked, so the UI cannot offer a duplicate.
+    var linkedPersonIds = c.Persons.Select(p => p.PersonId).ToHashSet();
+    var availablePersons = Model.Persons
+        .Where(p => !linkedPersonIds.Contains(Guid.Parse(p.Value)))
+        .ToList();
+
+    var linkedLocationIds = c.Locations.Select(l => l.LocationId).ToHashSet();
+    var availableLocations = Model.Locations
+        .Where(l => !linkedLocationIds.Contains(Guid.Parse(l.Value)))
+        .ToList();
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Operations" },
+        new() { Text = "Crime Cases", Url = Url.Action("Index", "Cases") },
+        new() { Text = c.CaseNumber }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = c.CaseNumber,
+    Subtitle = c.Title,
+    Actions = (HtmlString)Html.Raw(Model.CanEdit
+        ? $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" asp-controller=\"Cases\" " +
+          $"asp-action=\"Edit\" asp-route-id=\"{c.Id}\">Edit case</a>"
+        : string.Empty)
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mb-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+@if (TempData["Netra.Error"] is string error)
+{
+    <div class="netra-alert netra-alert--danger netra-mb-4" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">@error</div>
+    </div>
+}
+
+@* ------------------------------------------------------------ OVERVIEW *@
+<div class="netra-grid netra-grid--stats netra-mb-4">
+    @await Html.PartialAsync("_StatCard", new StatCardModel
+    {
+        Label = "Status", Value = c.Status, Tone = StatusTone(c.Status)
+    })
+    @await Html.PartialAsync("_StatCard", new StatCardModel
+    {
+        Label = "Severity", Value = c.Severity, Tone = SeverityTone(c.Severity)
+    })
+    @await Html.PartialAsync("_StatCard", new StatCardModel
+    {
+        Label = "Persons", Value = c.Persons.Count.ToString()
+    })
+    @await Html.PartialAsync("_StatCard", new StatCardModel
+    {
+        Label = "Evidence", Value = c.Evidence.Count.ToString()
+    })
+</div>
+
+<div class="netra-card netra-mb-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+            Case Overview
+        </h2>
+        <span class="netra-mono netra-faint" style="font-size:11px;">@c.Id</span>
+    </div>
+    <div class="netra-card__body">
+        <div class="netra-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--netra-space-4);">
+            <div>
+                <span class="netra-label">Case number</span>
+                <div class="netra-mono">@c.CaseNumber</div>
+            </div>
+            <div>
+                <span class="netra-label">Crime type</span>
+                <div>@c.CrimeTypeName</div>
+            </div>
+            <div>
+                <span class="netra-label">Incident date</span>
+                <div>@c.IncidentDate.ToString("dd MMM yyyy")</div>
+            </div>
+            <div>
+                <span class="netra-label">Reported</span>
+                <div>@(c.ReportedDate?.ToString("dd MMM yyyy") ?? "—")</div>
+            </div>
+            <div>
+                <span class="netra-label">District</span>
+                <div>@(c.DistrictName ?? "—")</div>
+            </div>
+            <div>
+                <span class="netra-label">Investigator</span>
+                <div>
+                    @(c.InvestigatorName ?? "Unassigned")
+                    @if (!string.IsNullOrWhiteSpace(c.InvestigatorBadge))
+                    {
+                        <span class="netra-faint netra-mono">· @c.InvestigatorBadge</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <span class="netra-label">Registered by</span>
+                <div>@c.CreatedByName</div>
+            </div>
+            <div>
+                <span class="netra-label">Closed</span>
+                <div>@(c.ClosedDate?.ToString("dd MMM yyyy") ?? "—")</div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(c.Description))
+        {
+            <div class="netra-divider"></div>
+            <span class="netra-label">Description</span>
+            <p class="netra-muted">@c.Description</p>
+        }
+    </div>
+
+    @if (Model.CanAssign)
+    {
+        <div class="netra-card__footer">
+            <form asp-controller="Cases" asp-action="Assign" asp-route-caseId="@c.Id" method="post"
+                  class="netra-row" style="gap:var(--netra-space-3);">
+                @Html.AntiForgeryToken()
+                <label class="netra-label" for="InvestigatorId" style="margin:0;">Assign investigator</label>
+                <select class="netra-select" id="InvestigatorId" name="InvestigatorId" style="max-width:280px;">
+                    <option value="">Unassigned</option>
+                    @foreach (var investigator in Model.Investigators)
+                    {
+                        var isCurrent = !string.IsNullOrWhiteSpace(c.InvestigatorName)
+                                        && c.InvestigatorName.Contains(
+                                            investigator.Label.Split('(')[0].Trim(), StringComparison.OrdinalIgnoreCase);
+                        <option value="@investigator.Value" selected="@isCurrent">@investigator.Label</option>
+                    }
+                </select>
+                <button type="submit" class="netra-btn netra-btn--outline netra-btn--sm">Update</button>
+            </form>
+        </div>
+    }
+</div>
+
+@* ------------------------------------------------------------- PERSONS *@
+<div class="netra-card netra-mb-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Persons))</span>
+            Related Persons
+        </h2>
+        <span class="netra-faint" style="font-size:11px;">
+            Association is not evidence of guilt.
+        </span>
+    </div>
+    <div class="netra-card__body netra-card__body--flush">
+        <div class="netra-tablewrap">
+            <table class="netra-table">
+                <caption class="netra-sr-only">People associated with this case</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">National ID</th>
+                        <th scope="col">Date of birth</th>
+                        <th scope="col">Notes</th>
+                        @if (Model.CanManagePersons) { <th scope="col">Actions</th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (c.Persons.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="@(Model.CanManagePersons ? 6 : 5)">
+                                <div class="netra-empty">
+                                    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Persons))</span>
+                                    <p class="netra-empty__title">No persons associated</p>
+                                    <p class="netra-empty__text">
+                                        Add an existing person record. NETRA does not create
+                                        person records from a case.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var person in c.Persons)
+                        {
+                            var roleTone = person.Role switch
+                            {
+                                nameof(PersonRole.Suspect) => NetraTone.Warning,
+                                nameof(PersonRole.Victim) => NetraTone.Info,
+                                nameof(PersonRole.Witness) => NetraTone.Success,
+                                _ => NetraTone.Neutral
+                            };
+                            <tr>
+                                <td class="netra-table__primary">@person.FullName</td>
+                                <td>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                    {
+                                        Text = person.Role, Tone = roleTone, ShowDot = false
+                                    })
+                                </td>
+                                <td class="netra-mono">@(person.NationalIdNumber ?? "—")</td>
+                                <td>@(person.DateOfBirth ?? "—")</td>
+                                <td class="netra-muted">@(person.Notes ?? "—")</td>
+                                @if (Model.CanManagePersons)
+                                {
+                                    <td>
+                                        <form asp-controller="Cases" asp-action="RemovePerson"
+                                              asp-route-caseId="@c.Id" asp-route-casePersonId="@person.Id"
+                                              method="post">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="netra-btn netra-btn--ghost netra-btn--sm"
+                                                    aria-label="Remove @person.FullName from this case">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.CanManagePersons && availablePersons.Count > 0)
+    {
+        <div class="netra-card__footer">
+            <form asp-controller="Cases" asp-action="AddPerson" asp-route-caseId="@c.Id" method="post"
+                  class="netra-row" style="gap:var(--netra-space-3);flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="netra-label" for="PersonId" style="margin:0 0 4px;">Add person</label>
+                    <select class="netra-select" id="PersonId" name="PersonId" style="min-width:220px;">
+                        <option value="">Select an existing person</option>
+                        @foreach (var person in availablePersons)
+                        {
+                            <option value="@person.Value">@person.Label</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="netra-label" for="Role" style="margin:0 0 4px;">Role</label>
+                    <select class="netra-select" id="Role" name="Role" style="min-width:150px;">
+                        @foreach (var role in AddPersonToCaseViewModel.Roles)
+                        {
+                            <option value="@role.Value" selected="@(role.Value == nameof(PersonRole.PersonOfInterest))">
+                                @role.Label
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="netra-label" for="PersonNotes" style="margin:0 0 4px;">Notes</label>
+                    <input class="netra-input" id="PersonNotes" name="Notes" type="text"
+                           maxlength="500" placeholder="Association notes" style="min-width:200px;" />
+                </div>
+                <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm"
+                        style="align-self:flex-end;">Add person</button>
+            </form>
+        </div>
+    }
+</div>
+
+@* ----------------------------------------------------------- LOCATIONS *@
+<div class="netra-card netra-mb-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+            Locations
+        </h2>
+    </div>
+    <div class="netra-card__body netra-card__body--flush">
+        <div class="netra-tablewrap">
+            <table class="netra-table">
+                <caption class="netra-sr-only">Locations associated with this case</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Role on case</th>
+                        <th scope="col">District</th>
+                        <th scope="col">Police station</th>
+                        <th scope="col">Coordinates</th>
+                        @if (Model.CanManageLocations) { <th scope="col">Actions</th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (c.Locations.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="@(Model.CanManageLocations ? 6 : 5)">
+                                <div class="netra-empty">
+                                    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+                                    <p class="netra-empty__title">No locations associated</p>
+                                    <p class="netra-empty__text">Associate an existing location record.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var location in c.Locations)
+                        {
+                            <tr>
+                                <td class="netra-table__primary">@location.Name</td>
+                                <td>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                    {
+                                        Text = location.LocationRole ?? "Related",
+                                        Tone = location.LocationRole == "Incident" ? NetraTone.Primary : NetraTone.Neutral,
+                                        ShowDot = false
+                                    })
+                                </td>
+                                <td>@(location.DistrictName ?? "—")</td>
+                                <td>@(location.PoliceStationName ?? "—")</td>
+                                <td class="netra-mono netra-faint">
+                                    @(location.Latitude.HasValue && location.Longitude.HasValue
+                                        ? $"{location.Latitude:0.#####}, {location.Longitude:0.#####}"
+                                        : "—")
+                                </td>
+                                @if (Model.CanManageLocations)
+                                {
+                                    <td>
+                                        <form asp-controller="Cases" asp-action="RemoveLocation"
+                                              asp-route-caseId="@c.Id" asp-route-caseLocationId="@location.Id"
+                                              method="post">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="netra-btn netra-btn--ghost netra-btn--sm"
+                                                    aria-label="Remove @location.Name from this case">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.CanManageLocations && availableLocations.Count > 0)
+    {
+        <div class="netra-card__footer">
+            <form asp-controller="Cases" asp-action="AddLocation" asp-route-caseId="@c.Id" method="post"
+                  class="netra-row" style="gap:var(--netra-space-3);flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label class="netra-label" for="LocationId" style="margin:0 0 4px;">Add location</label>
+                    <select class="netra-select" id="LocationId" name="LocationId" style="min-width:220px;">
+                        <option value="">Select an existing location</option>
+                        @foreach (var location in availableLocations)
+                        {
+                            <option value="@location.Value">@location.Label</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="netra-label" for="LocationRole" style="margin:0 0 4px;">Role</label>
+                    <input class="netra-input" id="LocationRole" name="LocationRole" type="text"
+                           maxlength="100" value="Related" style="min-width:150px;" />
+                </div>
+                <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm"
+                        style="align-self:flex-end;">Add location</button>
+            </form>
+        </div>
+    }
+</div>
+
+@* --------------------------------------------------------- INVESTIGATION *@
+@if (c.InvestigationId is Guid investigationId)
+{
+    <div class="netra-card netra-mb-4">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Investigation))</span>
+                Investigation
+            </h2>
+            <a class="netra-btn netra-btn--outline netra-btn--sm"
+               asp-controller="Investigations" asp-action="Details" asp-route-id="@investigationId">
+                Open workspace
+            </a>
+        </div>
+        <div class="netra-card__body">
+            <span class="netra-label">Modus operandi</span>
+            <p class="netra-muted">@(c.ModusOperandi ?? "Not recorded.")</p>
+        </div>
+    </div>
+}
+
+@* ------------------------------------------------------------ EVIDENCE *@
+<div class="netra-card netra-mb-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Evidence))</span>
+            Evidence
+        </h2>
+    </div>
+    <div class="netra-card__body netra-card__body--flush">
+        <div class="netra-tablewrap">
+            <table class="netra-table">
+                <caption class="netra-sr-only">Evidence recorded on this case</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Collected</th>
+                        <th scope="col">By</th>
+                        <th scope="col">Files</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (c.Evidence.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="netra-empty">
+                                    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Evidence))</span>
+                                    <p class="netra-empty__title">No evidence recorded</p>
+                                    <p class="netra-empty__text">Add evidence using the panel below.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in c.Evidence)
+                        {
+                            <tr>
+                                <td class="netra-table__primary">@item.Title</td>
+                                <td>@item.EvidenceType</td>
+                                <td>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                    {
+                                        Text = item.Status, Tone = NetraTone.Info
+                                    })
+                                </td>
+                                <td>@(item.CollectedAt?.ToString("dd MMM yyyy") ?? "—")</td>
+                                <td>@(item.CollectedByName ?? "—")</td>
+                                <td>
+                                    @if (item.Files.Count == 0)
+                                    {
+                                        <span class="netra-faint">None</span>
+                                    }
+                                    else
+                                    {
+                                        <ul style="list-style:none;margin:0;padding:0;">
+                                            @foreach (var file in item.Files)
+                                            {
+                                                <li class="netra-mono" style="font-size:11px;">
+                                                    @file.FileName
+                                                    <span class="netra-faint">· @FormatBytes(file.FileSizeBytes)</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.CanManageEvidence)
+    {
+        <div class="netra-card__footer">
+            <form asp-controller="Cases" asp-action="AddEvidence" asp-route-caseId="@c.Id"
+                  method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="netra-row" style="gap:var(--netra-space-3);flex-wrap:wrap;align-items:flex-end;">
+                    <div>
+                        <label class="netra-label" for="EvidenceTitle" style="margin:0 0 4px;">Evidence name</label>
+                        <input class="netra-input" id="EvidenceTitle" name="Title" type="text"
+                               maxlength="200" required style="min-width:200px;" />
+                    </div>
+                    <div>
+                        <label class="netra-label" for="EvidenceType" style="margin:0 0 4px;">Type</label>
+                        <select class="netra-select" id="EvidenceType" name="EvidenceType">
+                            @foreach (var type in AddEvidenceViewModel.EvidenceTypes)
+                            {
+                                <option value="@type.Value">@type.Label</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="netra-label" for="CollectedAt" style="margin:0 0 4px;">Collected</label>
+                        <input class="netra-input" id="CollectedAt" name="CollectedAt" type="date" />
+                    </div>
+                    <div>
+                        <label class="netra-label" for="EvidenceFile" style="margin:0 0 4px;">Attach file</label>
+                        <input class="netra-input" id="EvidenceFile" name="File" type="file" style="padding:4px;" />
+                    </div>
+                    <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Add evidence</button>
+                </div>
+                <p class="netra-field__hint" style="margin-top:8px;">
+                    Accepted: @string.Join(", ", new[] { ".pdf", ".png", ".jpg", ".docx", ".xlsx", ".csv", ".txt", ".zip" }). Maximum 25 MB.
+                </p>
+            </form>
+        </div>
+    }
+</div>
+
+@* ----------------------------------------------- NOTES AND TIMELINE *@
+<div class="netra-grid netra-grid--2">
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                Investigation Notes
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            @if (c.Notes.Count == 0)
+            {
+                <div class="netra-empty" style="padding:var(--netra-space-5) 0;">
+                    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                    <p class="netra-empty__title">No notes recorded</p>
+                </div>
+            }
+            else
+            {
+                <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--netra-space-3);">
+                    @foreach (var note in c.Notes)
+                    {
+                        <li style="border-left:2px solid var(--netra-border-strong);padding-left:var(--netra-space-3);">
+                            <div class="netra-row netra-row--between" style="margin-bottom:4px;">
+                                <span class="netra-badge netra-badge--neutral">@note.NoteType</span>
+                                <span class="netra-faint" style="font-size:11px;">@note.CreatedAt.ToString("dd MMM yyyy HH:mm")</span>
+                            </div>
+                            <p class="netra-muted" style="margin:0;">@note.Content</p>
+                            <p class="netra-faint" style="margin:4px 0 0;font-size:11px;">@note.AuthorName</p>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+
+        @if (Model.CanManageNotes)
+        {
+            <div class="netra-card__footer">
+                <form asp-controller="Cases" asp-action="AddNote" asp-route-caseId="@c.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="netra-field" style="margin-bottom:8px;">
+                        <label class="netra-label" for="NoteContent">Add note</label>
+                        <textarea class="netra-textarea" id="NoteContent" name="Content" maxlength="4000"
+                                  rows="2" required placeholder="Observation, analysis or action"></textarea>
+                    </div>
+                    <div class="netra-row" style="gap:var(--netra-space-2);">
+                        <select class="netra-select" name="NoteType" style="max-width:160px;" aria-label="Note type">
+                            @foreach (var type in AddInvestigationNoteViewModel.NoteTypes)
+                            {
+                                <option value="@type.Value">@type.Label</option>
+                            }
+                        </select>
+                        <label class="netra-check">
+                            <input type="checkbox" name="IsPrivate" value="true" />
+                            <span>Restricted</span>
+                        </label>
+                        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Add note</button>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                Timeline
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            @if (c.Timeline.Count == 0)
+            {
+                <div class="netra-empty" style="padding:var(--netra-space-5) 0;">
+                    <span class="netra-empty__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                    <p class="netra-empty__title">No timeline events</p>
+                </div>
+            }
+            else
+            {
+                <ol style="list-style:none;margin:0;padding:0;">
+                    @foreach (var entry in c.Timeline)
+                    {
+                        <li style="position:relative;padding:0 0 var(--netra-space-4) var(--netra-space-5);">
+                            <span style="position:absolute;left:0;top:4px;width:8px;height:8px;border-radius:50%;
+                                         background:var(--netra-primary);"></span>
+                            <div class="netra-row netra-row--between">
+                                <span class="netra-table__primary">@entry.Title</span>
+                                <span class="netra-faint netra-mono" style="font-size:11px;">
+                                    @entry.EventDateTime.ToString("dd MMM yyyy HH:mm")
+                                </span>
+                            </div>
+                            <div class="netra-row" style="gap:8px;margin-top:2px;">
+                                <span class="netra-badge netra-badge--neutral">@entry.EventType</span>
+                                <span class="netra-faint" style="font-size:11px;">@entry.AuthorName</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(entry.Description))
+                            {
+                                <p class="netra-muted" style="margin:4px 0 0;font-size:12px;">@entry.Description</p>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        </div>
+
+        @if (Model.CanManageTimeline)
+        {
+            <div class="netra-card__footer">
+                <form asp-controller="Cases" asp-action="AddTimelineEvent" asp-route-caseId="@c.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="netra-row" style="gap:var(--netra-space-2);flex-wrap:wrap;align-items:flex-end;">
+                        <div>
+                            <label class="netra-label" for="EventTitle" style="margin:0 0 4px;">Event</label>
+                            <input class="netra-input" id="EventTitle" name="Title" type="text"
+                                   maxlength="200" required style="min-width:180px;" />
+                        </div>
+                        <div>
+                            <label class="netra-label" for="EventType" style="margin:0 0 4px;">Type</label>
+                            <select class="netra-select" id="EventType" name="EventType">
+                                @foreach (var type in AddTimelineEventViewModel.EventTypes)
+                                {
+                                    <option value="@type.Value">@type.Label</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="netra-label" for="EventDateTime" style="margin:0 0 4px;">When</label>
+                            <input class="netra-input" id="EventDateTime" name="EventDateTime"
+                                   type="datetime-local" required />
+                        </div>
+                        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Add event</button>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@* ------------------------------------------------------------- HISTORY *@
+@if (Model.History.Count > 0)
+{
+    <div class="netra-card netra-mt-4">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                Case History
+            </h2>
+            <span class="netra-faint" style="font-size:11px;">From the audit log</span>
+        </div>
+        <div class="netra-card__body netra-card__body--flush">
+            <div class="netra-tablewrap">
+                <table class="netra-table">
+                    <caption class="netra-sr-only">Audit history for this case</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">When</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Field</th>
+                            <th scope="col">Change</th>
+                            <th scope="col">By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var change in Model.History)
+                        {
+                            <tr>
+                                <td class="netra-mono netra-faint">@change.Timestamp.ToString("dd MMM HH:mm")</td>
+                                <td>
+                                    @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                    {
+                                        Text = change.Action, Tone = NetraTone.Neutral, ShowDot = false
+                                    })
+                                </td>
+                                <td class="netra-muted">@change.Field</td>
+                                <td class="netra-muted" style="font-size:11.5px;">
+                                    @(change.OldValue is null
+                                        ? (change.NewValue ?? "—")
+                                        : $"{Truncate(change.OldValue)} → {Truncate(change.NewValue)}")
+                                </td>
+                                <td class="netra-muted">@change.UserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    private static NetraTone StatusTone(string status) => status switch
+    {
+        nameof(CaseStatus.Open) => NetraTone.Info,
+        nameof(CaseStatus.UnderInvestigation) => NetraTone.Primary,
+        nameof(CaseStatus.PendingReview) => NetraTone.Warning,
+        nameof(CaseStatus.Closed) => NetraTone.Success,
+        nameof(CaseStatus.Archived) => NetraTone.Neutral,
+        nameof(CaseStatus.Reopened) => NetraTone.Danger,
+        _ => NetraTone.Neutral
+    };
+
+    private static NetraTone SeverityTone(string severity) => severity switch
+    {
+        nameof(CaseSeverity.Critical) => NetraTone.Danger,
+        nameof(CaseSeverity.High) => NetraTone.Warning,
+        nameof(CaseSeverity.Medium) => NetraTone.Info,
+        nameof(CaseSeverity.Low) => NetraTone.Success,
+        _ => NetraTone.Neutral
+    };
+
+    private static string FormatBytes(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
+        _ => $"{bytes / (1024.0 * 1024.0):0.#} MB"
+    };
+
+    private static string Truncate(string? value) =>
+        string.IsNullOrEmpty(value) ? "—" :
+        value.Length <= 28 ? value : value[..28] + "…";
+}

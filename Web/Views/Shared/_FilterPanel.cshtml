@@ -1,0 +1,68 @@
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@model FilterPanelModel
+
+<form class="netra-filters"
+      asp-controller="@Model.Controller"
+      asp-action="@Model.Action"
+      asp-all-route-data="@(new Dictionary<string, string?>
+      {
+          ["page"] = "1"
+      })"
+      method="@Model.Method"
+      role="search">
+    @foreach (var field in Model.Fields)
+    {
+        <div class="netra-filters__group">
+            <label class="netra-label" for="filter-@field.Name">@field.Label</label>
+
+            @switch (field.Type)
+            {
+                case NetraFilterFieldType.Select:
+                    <select class="netra-select" id="filter-@field.Name" name="@field.Name">
+                        @foreach (var option in field.Options)
+                        {
+                            <option value="@option.Value" selected="@option.Selected">@option.Text</option>
+                        }
+                    </select>
+                    break;
+
+                case NetraFilterFieldType.Checkbox:
+                    <label class="netra-check">
+                        <input type="checkbox" id="filter-@field.Name" name="@field.Name" value="true"
+                               checked="@field.Checked" />
+                        <span>@field.Placeholder</span>
+                    </label>
+                    break;
+
+                default:
+                    var inputType = field.Type == NetraFilterFieldType.Date ? "date"
+                        : field.Type == NetraFilterFieldType.Number ? "number"
+                        : "text";
+                    <input class="netra-input"
+                           type="@inputType"
+                           id="filter-@field.Name"
+                           name="@field.Name"
+                           value="@field.Value"
+                           placeholder="@field.Placeholder" />
+                    break;
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ContentViewDataKey)
+        && ViewData[Model.ContentViewDataKey!] is HtmlString extra)
+    {
+        @extra
+    }
+
+    <div class="netra-filters__actions">
+        @if (!string.IsNullOrWhiteSpace(Model.ResetUrl))
+        {
+            <a class="netra-btn netra-btn--ghost netra-btn--sm" href="@Model.ResetUrl">Reset</a>
+        }
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">
+            @Model.SubmitLabel
+        </button>
+    </div>
+</form>

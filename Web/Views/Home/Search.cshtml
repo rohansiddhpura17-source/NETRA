@@ -1,0 +1,25 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Search";
+    var term = ViewData["SearchTerm"] as string;
+}
+
+@await Html.PartialAsync("_PageHeader", new NETRA.Web.Models.Ui.PageHeaderModel
+{
+    Title = "Search",
+    Subtitle = string.IsNullOrWhiteSpace(term)
+        ? "Search across cases, persons, locations and evidence."
+        : $"Results for “{term}”"
+})
+
+<div class="netra-card">
+    <div class="netra-card__body">
+        @await Html.PartialAsync("_EmptyState", new NETRA.Web.Models.Ui.EmptyStateModel
+        {
+            Icon = NETRA.Web.Models.Navigation.NetraIcon.Search,
+            Title = "Search indexing is not available yet",
+            Text = "Global search is scheduled for a later phase. The search box in the header will " +
+                   "return results once the search index is implemented."
+        })
+    </div>
+</div>

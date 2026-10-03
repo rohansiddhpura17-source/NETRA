@@ -1,0 +1,19 @@
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@model StatCardModel
+
+<div class="netra-stat netra-stat--@(Model.Tone.ToString().ToLowerInvariant())">
+    <span class="netra-stat__label">@Model.Label</span>
+    <span class="netra-stat__value">@Model.Value</span>
+    @if (Model.ShowIcon)
+    {
+        <span class="netra-stat__meta netra-row">
+            <span class="netra-nav__icon">@Html.Raw(NetraIconPaths.Render(Model.Icon))</span>
+            <span>@Model.Meta</span>
+        </span>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.Meta))
+    {
+        <span class="netra-stat__meta">@Model.Meta</span>
+    }
+</div>

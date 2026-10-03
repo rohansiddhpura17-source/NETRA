@@ -1,0 +1,214 @@
+@using Microsoft.AspNetCore.Html
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels.Alerts
+@model NETRA.Web.Models.ViewModels.Alerts.AlertsIndexViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Alerts";
+
+    string Hidden(string name, string? value) =>
+        $"<input type=\"hidden\" name=\"{name}\" value=\"{System.Net.WebUtility.HtmlEncode(value)}\" />";
+
+    // IHtmlContent.ToString() is NOT the markup — serialize the antiforgery token.
+    var tokenWriter = new System.IO.StringWriter();
+    Html.AntiForgeryToken().WriteTo(tokenWriter, System.Text.Encodings.Web.HtmlEncoder.Default);
+    var tokenMarkup = tokenWriter.ToString();
+
+    string? GenerateForm = Model.CanManage
+        ? "<form class=\"netra-inline-form\" method=\"post\" action=\"/alerts/generate\">" +
+          tokenMarkup +
+          Hidden("windowDays", "30") +
+          "<button type=\"submit\" class=\"netra-btn netra-btn--primary netra-btn--sm\">" +
+          "<span class=\"netra-btn__icon\">" + NetraIconPaths.Render(NetraIcon.Shield) + "</span>" +
+          "Generate Intelligence</button></form>"
+        : null;
+
+    var markAllForm = "<form class=\"netra-inline-form\" method=\"post\" action=\"/notifications/read-all\">" +
+        tokenMarkup +
+        "<button type=\"submit\" class=\"netra-btn netra-btn--ghost netra-btn--sm\">" +
+        "<span class=\"netra-btn__icon\">" + NetraIconPaths.Render(NetraIcon.Bell) + "</span>" +
+        "Mark All Read</button></form>";
+
+    var headerActions = new HtmlString(
+        (GenerateForm ?? string.Empty) + markAllForm +
+        "<a class=\"netra-btn netra-btn--ghost netra-btn--sm\" href=\"/notifications\">" +
+        "<span class=\"netra-btn__icon\">" + NetraIconPaths.Render(NetraIcon.Inbox) + "</span>" +
+        "Notifications</a>");
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Intelligence", Url = null },
+        new() { Text = "Alerts", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Alerts & Notifications",
+    Subtitle = "Real-time monitoring of analytically generated security alerts and system notifications. " +
+        "Alerts summarise recorded case data and analytical indicators — they are decision support, not findings.",
+    Actions = headerActions
+})
+
+@* Server-rendered GET filters — no client-side JavaScript. Active values are preserved. *@
+<form class="netra-filters netra-filters--band" id="alert-filters"
+      asp-controller="Alerts" asp-action="Index" method="get" role="search">
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Category">Alert type</label>
+        <select class="netra-select" id="Category" name="category">
+            <option value="">All types</option>
+            @foreach (var option in AlertsFilterViewModel.CategoryOptions)
+            {
+                <option value="@option.Value" selected="@(Model.Filter.Category == option.Value)">@option.Label</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Severity">Severity</label>
+        <select class="netra-select" id="Severity" name="severity">
+            <option value="">All severities</option>
+            @foreach (var severity in AlertsFilterViewModel.SeverityOptions)
+            {
+                <option value="@severity" selected="@(Model.Filter.Severity?.ToString() == severity)">@severity</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="Status">Status</label>
+        <select class="netra-select" id="Status" name="status">
+            <option value="">All statuses</option>
+            @foreach (var status in AlertsFilterViewModel.StatusOptions)
+            {
+                <option value="@status" selected="@(Model.Filter.Status?.ToString() == status)">@NetraDisplay.Words(status)</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateFrom">Date from</label>
+        <input class="netra-input" type="date" id="DateFrom" name="dateFrom"
+               value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="DateTo">Date to</label>
+        <input class="netra-input" type="date" id="DateTo" name="dateTo"
+               value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="netra-filters__group">
+        <label class="netra-label" for="CaseId">Related case</label>
+        <select class="netra-select" id="CaseId" name="caseId">
+            <option value="">All cases</option>
+            @foreach (var option in Model.CaseOptions)
+            {
+                <option value="@option.Id" selected="@(Model.Filter.CaseId == option.Id)">@option.CaseNumber</option>
+            }
+        </select>
+    </div>
+    <div class="netra-filters__actions">
+        <a class="netra-btn netra-btn--ghost netra-btn--sm" asp-controller="Alerts" asp-action="Index">Clear filters</a>
+        <button type="submit" class="netra-btn netra-btn--primary netra-btn--sm">Apply Filters</button>
+    </div>
+</form>
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
+<div class="netra-grid netra-grid--stats netra-mt-4">
+    @foreach (var card in Model.SummaryCards)
+    {
+        @await Html.PartialAsync("_StatCard", card)
+    }
+</div>
+
+<div class="netra-card netra-mt-4">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">
+            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Bell))</span>
+            Alert Feed
+        </h2>
+        <span class="netra-badge netra-badge--neutral">@Model.TotalCount alert@(Model.TotalCount == 1 ? "" : "s")</span>
+    </div>
+    <div class="netra-card__body">
+        @if (Model.Alerts.Count == 0)
+        {
+            @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+            {
+                Title = Model.HasActiveFilters ? "No alerts match the selected filters" : "No alerts yet",
+                Text = Model.HasActiveFilters
+                    ? "No alerts match the current filter combination. Clear the filters to see the full alert feed, " +
+                      "or run an intelligence generation pass to derive alerts from the recorded analytical findings."
+                    : "No alerts have been recorded yet. Alerts are derived from risk indicators, detected anomalies, " +
+                      "recorded case associations and security events — run an intelligence generation pass to derive them.",
+                Icon = NetraIcon.Bell,
+                ActionText = Model.HasActiveFilters ? null : "Clear filters",
+                ActionUrl = Model.HasActiveFilters ? null : "/alerts"
+            })
+        }
+        else
+        {
+            <div class="netra-alerts">
+                @foreach (var alert in Model.Alerts)
+                {
+                    <div class="netra-alert-card netra-alert-card--@alert.SeverityTone.ToString().ToLowerInvariant()">
+                        <div class="netra-alert-card__head">
+                            @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = alert.SeverityLabel,
+                                    Tone = alert.SeverityTone
+                                })
+                            @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = alert.StatusLabel,
+                                    Tone = alert.StatusTone
+                                })
+                            <span class="netra-badge netra-badge--neutral">@alert.CategoryLabel</span>
+                            <span class="netra-alert-card__time">@alert.CreatedAtText</span>
+                        </div>
+                        <h3 class="netra-alert-card__title">
+                            <a asp-controller="Alerts" asp-action="Details" asp-route-id="@alert.Id">@alert.Title</a>
+                        </h3>
+                        @if (!string.IsNullOrWhiteSpace(alert.Description))
+                        {
+                            <p class="netra-alert-card__description">@alert.Description</p>
+                        }
+                        <div class="netra-alert-card__actions">
+                            @if (!string.IsNullOrWhiteSpace(alert.MetaLine))
+                            {
+                                <span class="netra-alert-card__meta">@alert.MetaLine</span>
+                            }
+                            <span class="netra-alert-card__buttons">
+                                <a class="netra-btn netra-btn--primary netra-btn--sm"
+                                   asp-controller="Alerts" asp-action="Details" asp-route-id="@alert.Id">View Details</a>
+                            @if (alert.CrimeCaseId is { } caseId)
+                            {
+                                <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                   asp-controller="Cases" asp-action="Details" asp-route-id="@caseId">View Case</a>
+                            }
+                            @if (Model.CanManage && alert.StatusLabel != "Resolved" && alert.StatusLabel != "Dismissed")
+                            {
+                                <form class="netra-inline-form" method="post"
+                                      action="/alerts/dismiss/@alert.Id">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="reason" value="Dismissed from the alert feed." />
+                                    <button type="submit" class="netra-btn netra-btn--ghost netra-btn--sm">Dismiss</button>
+                                </form>
+                            }
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@await Html.PartialAsync("_Pagination", Model.Pagination)

@@ -1,0 +1,71 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportJobDto
+
+<header class="netra-import-job">
+    <div class="netra-import-job__head">
+        <h2 class="netra-import-job__name">@Model.Name</h2>
+        @await Html.PartialAsync("_StatusBadge", BulkImportStatusUi.JobBadge(Model.Status))
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <p class="netra-muted">@Model.Description</p>
+    }
+
+    <dl class="netra-facts netra-import-job__facts">
+        <div>
+            <dt>File</dt>
+            <dd class="netra-mono">@Model.FileName</dd>
+        </div>
+        <div>
+            <dt>Size</dt>
+            <dd>@BulkImportStatusUi.FileSize(Model.FileSizeBytes) &middot; @Model.ContentType</dd>
+        </div>
+        <div>
+            <dt>Uploaded by</dt>
+            <dd>@Model.CreatedByName</dd>
+        </div>
+        <div>
+            <dt>Uploaded</dt>
+            <dd>@BulkImportStatusUi.When(Model.CreatedAt)</dd>
+        </div>
+        <div>
+            <dt>Rows</dt>
+            <dd>@BulkImportStatusUi.Rows(Model.TotalRows)</dd>
+        </div>
+        @if (Model.CompletedAt is not null)
+        {
+            <div>
+                <dt>Finished</dt>
+                <dd>@BulkImportStatusUi.When(Model.CompletedAt)</dd>
+            </div>
+        }
+    </dl>
+
+    <div class="netra-import-job__counts">
+        <span class="netra-import-count netra-import-count--valid">
+            <strong>@Model.ValidRows.ToString("N0")</strong> accepted
+        </span>
+        <span class="netra-import-count netra-import-count--invalid">
+            <strong>@Model.InvalidRows.ToString("N0")</strong> rejected
+        </span>
+        <span class="netra-import-count netra-import-count--duplicate">
+            <strong>@Model.DuplicateRows.ToString("N0")</strong> duplicates
+        </span>
+        <span class="netra-import-count netra-import-count--warning">
+            <strong>@Model.WarningRows.ToString("N0")</strong> warnings
+        </span>
+        @if (Model.ImportedRows > 0)
+        {
+            <span class="netra-import-count netra-import-count--imported">
+                <strong>@Model.ImportedRows.ToString("N0")</strong> imported
+            </span>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ImportBlockedBecause))
+    {
+        <p class="netra-muted netra-import-job__blocked">@Model.ImportBlockedBecause</p>
+    }
+</header>

@@ -1,0 +1,77 @@
+@using NETRA.Web.Models.Ui
+@model PaginationModel
+
+@if (Model.TotalItems > 0)
+{
+    <nav class="netra-pagination" aria-label="Pagination">
+        <span class="netra-pagination__info">
+            Showing @Model.From&ndash;@Model.To of @Model.TotalItems
+        </span>
+
+        @if (Model.TotalPages > 1)
+        {
+            <ul class="netra-pagination__list">
+                <li>
+                    @if (Model.Page > 1)
+                    {
+                        <a class="netra-pagination__link"
+                           asp-controller="@Model.Controller"
+                           asp-action="@Model.Action"
+                           asp-all-route-data="@PageRoute(1)"
+                           aria-label="Previous page">&larr;</a>
+                    }
+                    else
+                    {
+                        <span class="netra-pagination__link" aria-disabled="true">&larr;</span>
+                    }
+                </li>
+
+                @foreach (var number in Model.PageNumbers)
+                {
+                    <li>
+                        @if (number == Model.Page)
+                        {
+                            <span class="netra-pagination__link" aria-current="page">@number</span>
+                        }
+                        else
+                        {
+                            <a class="netra-pagination__link"
+                               asp-controller="@Model.Controller"
+                               asp-action="@Model.Action"
+                               asp-all-route-data="@PageRoute(number)"
+                               aria-label="Page @number">@number</a>
+                        }
+                    </li>
+                }
+
+                <li>
+                    @if (Model.Page < Model.TotalPages)
+                    {
+                        <a class="netra-pagination__link"
+                           asp-controller="@Model.Controller"
+                           asp-action="@Model.Action"
+                           asp-all-route-data="@PageRoute(Model.Page + 1)"
+                           aria-label="Next page">&rarr;</a>
+                    }
+                    else
+                    {
+                        <span class="netra-pagination__link" aria-disabled="true">&rarr;</span>
+                    }
+                </li>
+            </ul>
+        }
+    </nav>
+}
+
+@functions {
+    // Builds the route values for a target page, preserving any active filters.
+    private Dictionary<string, string?> PageRoute(int page)
+    {
+        var values = new Dictionary<string, string?>(Model.RouteValues)
+        {
+            ["page"] = page.ToString()
+        };
+
+        return values;
+    }
+}

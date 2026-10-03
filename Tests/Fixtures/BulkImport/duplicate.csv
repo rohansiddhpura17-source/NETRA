@@ -1,0 +1,6 @@
+CaseNumber,Title,CrimeType,IncidentDate,Severity,Status,Description,District,PoliceStation
+BX-9201,First synthetic row,THF,2026-03-01,Medium,Open,Test,CD,CHQ
+BX-9201,Repeated synthetic row,THF,2026-03-02,Medium,Open,Test,CD,CHQ
+bx-9201,Lowercase repeat of the same reference,THF,2026-03-03,Medium,Open,Test,CD,CHQ
+BX-9202,Case number already in NETRA,ASL,2026-03-04,Low,Open,Test,ND,SHQ
+BX-9203,Unique synthetic row,THF,2026-03-05,High,Open,Test,CD,CHQ

@@ -1,0 +1,198 @@
+@model CreateCaseViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Register New Crime Case";
+
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Operations" },
+        new() { Text = "Crime Cases", Url = Url.Action("Index", "Cases") },
+        new() { Text = "Register New Crime Case" }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Register New Crime Case",
+    Subtitle = "Create the case record, scene location and initial investigation."
+})
+
+<form asp-controller="Cases" asp-action="Create" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-grid netra-grid--form">
+        <div class="netra-stack">
+            @* ------------------------------------------------ CASE INFORMATION *@
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                        Case Information
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.CaseNumber)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="CaseNumber">Case number (optional)</label>
+                        <input class="netra-input" asp-for="CaseNumber" type="text" maxlength="50"
+                               placeholder="Leave blank to generate automatically" />
+                        <p class="netra-field__hint">Generated on the server as CC-&lt;year&gt;-#### if left blank.</p>
+                        <span asp-validation-for="CaseNumber" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Title)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="Title">Case title</label>
+                        <input class="netra-input" asp-for="Title" type="text" maxlength="200" required />
+                        <span asp-validation-for="Title" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.CrimeTypeId)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="CrimeTypeId">Crime type</label>
+                        <select class="netra-select" asp-for="CrimeTypeId" asp-items="@(
+                            new SelectList(Model.CrimeTypes, nameof(SelectOption.Value), nameof(SelectOption.Label)))">
+                            <option value="">Select a crime type</option>
+                        </select>
+                        <span asp-validation-for="CrimeTypeId" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-grid" style="grid-template-columns:1fr 1fr;gap:var(--netra-space-3);">
+                        <div class="netra-field">
+                            <label class="netra-label" asp-for="Status">Status</label>
+                            <select class="netra-select" asp-for="Status" asp-items="@(
+                                new SelectList(Model.StatusOptions, nameof(SelectOption.Value), nameof(SelectOption.Label)))"></select>
+                        </div>
+                        <div class="netra-field">
+                            <label class="netra-label" asp-for="Severity">Severity</label>
+                            <select class="netra-select" asp-for="Severity" asp-items="@(
+                                new SelectList(Model.SeverityOptions, nameof(SelectOption.Value), nameof(SelectOption.Label)))"></select>
+                        </div>
+                    </div>
+
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.IncidentDate)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="IncidentDate">Incident date</label>
+                        <input class="netra-input" asp-for="IncidentDate" type="date" required />
+                        <span asp-validation-for="IncidentDate" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field">
+                        <label class="netra-label" asp-for="Description">Description</label>
+                        <textarea class="netra-textarea" asp-for="Description" maxlength="2000" rows="4"
+                                  placeholder="Summary of the reported incident"></textarea>
+                        <span asp-validation-for="Description" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+
+            @* --------------------------------------------------- INVESTIGATION *@
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Investigation))</span>
+                        Investigation
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <div class="netra-field">
+                        <label class="netra-label" asp-for="InvestigatorId">Investigator</label>
+                        <select class="netra-select" asp-for="InvestigatorId" asp-items="@(
+                            new SelectList(Model.Investigators, nameof(SelectOption.Value), nameof(SelectOption.Label)))">
+                            <option value="">Unassigned</option>
+                        </select>
+                        <span asp-validation-for="InvestigatorId" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field">
+                        <label class="netra-label" asp-for="ModusOperandi">Modus operandi</label>
+                        <textarea class="netra-textarea" asp-for="ModusOperandi" maxlength="4000" rows="3"
+                                  placeholder="Known methods used"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-stack">
+            @* ------------------------------------------------- LOCATION DETAILS *@
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+                        Location Details
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <div class="netra-field">
+                        <label class="netra-label" asp-for="DistrictId">District</label>
+                        <select class="netra-select" asp-for="DistrictId" asp-items="@(
+                            new SelectList(Model.Districts, nameof(SelectOption.Value), nameof(SelectOption.Label)))">
+                            <option value="">Not specified</option>
+                        </select>
+                        <span asp-validation-for="DistrictId" class="netra-field__error"></span>
+                    </div>
+
+                    <div class="netra-field">
+                        <label class="netra-label" asp-for="Address">Address</label>
+                        <input class="netra-input" asp-for="Address" type="text" maxlength="500"
+                               placeholder="Scene address" />
+                    </div>
+
+                    <div class="netra-grid" style="grid-template-columns:1fr 1fr;gap:var(--netra-space-3);">
+                        <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Latitude)) ? "netra-field--invalid" : null)">
+                            <label class="netra-label" asp-for="Latitude">Latitude</label>
+                            <input class="netra-input" asp-for="Latitude" type="number" step="any" />
+                            <span asp-validation-for="Latitude" class="netra-field__error"></span>
+                        </div>
+                        <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Longitude)) ? "netra-field--invalid" : null)">
+                            <label class="netra-label" asp-for="Longitude">Longitude</label>
+                            <input class="netra-input" asp-for="Longitude" type="number" step="any" />
+                            <span asp-validation-for="Longitude" class="netra-field__error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ------------------------------------------- RELATED PERSONS / EVIDENCE *@
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Persons))</span>
+                        Related Persons
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <p class="netra-muted" style="font-size:12.5px;">
+                        No persons are associated yet. Save the case first, then add existing
+                        persons from the case detail page. NETRA does not create person records
+                        automatically.
+                    </p>
+                    <span class="netra-badge netra-badge--neutral">Add Person after saving</span>
+                </div>
+            </div>
+
+            <div class="netra-card">
+                <div class="netra-card__header">
+                    <h2 class="netra-card__title">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Evidence))</span>
+                        Evidence Attachments
+                    </h2>
+                </div>
+                <div class="netra-card__body">
+                    <p class="netra-muted" style="font-size:12.5px;">
+                        No evidence recorded yet. Attachments can be added to individual evidence
+                        items from the case detail page.
+                    </p>
+                    <span class="netra-badge netra-badge--neutral">Add Evidence after saving</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" asp-controller="Cases" asp-action="Index">Cancel</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Register case</button>
+    </div>
+</form>

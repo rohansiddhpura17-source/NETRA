@@ -1,0 +1,97 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model NotificationSettingsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Notification settings";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "Notifications", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Notifications",
+    Subtitle = "Which NETRA alert categories create new items in your in-app inbox. Delivery is " +
+        "in-application only: this deployment has no mail provider, so there is no email or SMS " +
+        "option to offer."
+})
+
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">@success</div>
+    </div>
+}
+
+<form asp-controller="Settings" asp-action="Notifications" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-settings__form">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Bell))</span>
+                    Alert categories
+                </h2>
+                <span class="netra-badge netra-badge--neutral">@Model.Rows.Count categories</span>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-settings__note">
+                    These are the categories NETRA's alert generation can actually produce, taken
+                    from the application's own category list — no invented options. A category that
+                    is switched off stops new notifications of that kind being created; anything
+                    already in your inbox stays there, and alerts themselves are unaffected.
+                </p>
+
+                <div class="netra-settings__rows netra-mt-3">
+                    @foreach (var row in Model.Rows)
+                    {
+                        <div class="netra-settings__row">
+                            <label class="netra-settings__row-label netra-check" for="cat-@row.Category">
+                                <input type="checkbox" id="cat-@row.Category"
+                                       name="EnabledCategories" value="@row.Category"
+                                       checked="@row.IsEnabled" />
+                                <span>@row.Label</span>
+                            </label>
+                            <span class="netra-settings__row-meta">
+                                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = row.StateLabel,
+                                    Tone = row.StateTone,
+                                    ShowDot = false
+                                })
+                                <span>@row.SourceLabel</span>
+                            </span>
+                        </div>
+                    }
+                </div>
+                <span asp-validation-for="EnabledCategories" class="netra-field__error"></span>
+
+                <p class="netra-settings__note netra-mt-3">
+                    Leaving every box unchecked is allowed: it simply means no alert category
+                    creates new notifications for you. Your role decides which categories you are
+                    even eligible for, and hiding a link in the sidebar is never the gate.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline" asp-controller="Notifications" asp-action="Index">
+            Open my inbox
+        </a>
+        <a class="netra-btn netra-btn--outline" href="/settings">Back to settings</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Save preferences</button>
+    </div>
+</form>

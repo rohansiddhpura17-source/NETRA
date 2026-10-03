@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Application/">
+    <Project Path="Application/NETRA.Application.csproj" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="Domain/NETRA.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/NETRA.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/NETRA.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Web/">
+    <Project Path="Web/NETRA.Web.csproj" />
+  </Folder>
+</Solution>

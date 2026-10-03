@@ -1,0 +1,192 @@
+@using NETRA.Application.BulkImport
+@using NETRA.Web.Models.ViewModels.BulkImport
+@model BulkImportIndexViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Bulk Data Import";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Data", Url = null },
+        new() { Text = "Bulk Data Import", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Bulk Data Import",
+    Subtitle = "Register crime cases from a CSV file in controlled batches: upload, validate, preview, then import."
+})
+
+<div class="netra-alert netra-alert--info netra-import-note" role="note">
+    <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+    <div class="netra-alert__body">
+        <strong>Nothing is stored until you confirm it.</strong>
+        Uploading a file only registers it for review. Validation reports every row it can and
+        cannot accept, the preview shows the accepted rows without writing them, and only the
+        Import action on the preview page creates cases. Each import belongs to the operator who
+        uploaded it.
+    </div>
+</div>
+
+@if (TempData["Netra.Error"] is string error)
+{
+    <div class="netra-alert netra-alert--danger" role="alert">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+        <div class="netra-alert__body">@error</div>
+    </div>
+}
+
+<section class="netra-card netra-import-steps" aria-label="How bulk import works">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">How it works</h2>
+    </div>
+    <div class="netra-card__body">
+        <ol class="netra-import-steps__list">
+            <li>
+                <span class="netra-import-steps__mark">1</span>
+                <div>
+                    <strong>Upload</strong>
+                    <p class="netra-muted">A CSV file is stored and becomes a pending import. No rows are read yet.</p>
+                </div>
+            </li>
+            <li>
+                <span class="netra-import-steps__mark">2</span>
+                <div>
+                    <strong>Validate</strong>
+                    <p class="netra-muted">
+                        Every row is checked against the case register: required fields, dates,
+                        statuses, crime types, districts, stations, coordinates and duplicate
+                        case numbers.
+                    </p>
+                </div>
+            </li>
+            <li>
+                <span class="netra-import-steps__mark">3</span>
+                <div>
+                    <strong>Preview</strong>
+                    <p class="netra-muted">
+                        The accepted rows are shown for review. A preview writes nothing &mdash;
+                        it is a look, not a storage step.
+                    </p>
+                </div>
+            </li>
+            <li>
+                <span class="netra-import-steps__mark">4</span>
+                <div>
+                    <strong>Import</strong>
+                    <p class="netra-muted">
+                        On your confirmation the file is re-read and accepted rows are written in
+                        one transaction, so a failure leaves no half-imported batch.
+                    </p>
+                </div>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<div class="netra-import-layout">
+    <section class="netra-card" aria-label="Start a new import">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Start a new import</h2>
+            <a class="netra-btn netra-btn--ghost netra-btn--sm"
+               asp-controller="BulkImport" asp-action="Upload">Full page</a>
+        </div>
+        <div class="netra-card__body">
+            @await Html.PartialAsync("_UploadForm", new BulkImportUploadForm())
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="Recent imports">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">My recent imports</h2>
+            <span class="netra-badge netra-badge--neutral">@Model.RecentJobs.Count</span>
+        </div>
+        <div class="netra-card__body">
+            @if (Model.RecentJobs.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No imports yet",
+                    Text = "Upload a CSV file to register a batch of crime cases for review.",
+                    Icon = NetraIcon.Import
+                })
+            }
+            else
+            {
+                <div class="netra-tablewrap">
+                    <table class="netra-table netra-import-jobs">
+                        <caption class="netra-visually-hidden">Your recent bulk imports</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Import</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Rows</th>
+                                <th scope="col">Uploaded</th>
+                                <th scope="col">Next step</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var job in Model.RecentJobs)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="netra-table__primary">@job.Name</span>
+                                        <span class="netra-muted netra-mono">@job.FileName</span>
+                                    </td>
+                                    <td>
+                                        @await Html.PartialAsync(
+                                            "_StatusBadge", BulkImportStatusUi.JobBadge(job.Status))
+                                    </td>
+                                    <td>
+                                        @if (job.TotalRows > 0)
+                                        {
+                                            <span>@BulkImportStatusUi.Rows(job.TotalRows)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="netra-muted">Not validated</span>
+                                        }
+                                    </td>
+                                    <td class="netra-muted">@BulkImportStatusUi.When(job.CreatedAt)</td>
+                                    <td>
+                                        @if (job.AwaitingValidation)
+                                        {
+                                            <a class="netra-btn netra-btn--outline netra-btn--sm"
+                                               asp-controller="BulkImport" asp-action="Validate"
+                                               asp-route-id="@job.Id">Validate</a>
+                                        }
+                                        else if (job.Status == ImportStatus.Validated)
+                                        {
+                                            <a class="netra-btn netra-btn--primary netra-btn--sm"
+                                               asp-controller="BulkImport" asp-action="Preview"
+                                               asp-route-id="@job.Id">Review &amp; import</a>
+                                        }
+                                        else
+                                        {
+                                            <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                               asp-controller="BulkImport" asp-action="Result"
+                                               asp-route-id="@job.Id">View result</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+</div>
+
+<section class="netra-card" aria-label="CSV requirements">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">CSV requirements</h2>
+    </div>
+    <div class="netra-card__body">
+        @await Html.PartialAsync("_CsvRequirements", Model.Requirements)
+    </div>
+</section>

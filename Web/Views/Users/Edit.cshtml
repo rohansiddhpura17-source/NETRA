@@ -1,0 +1,142 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@model NETRA.Web.Models.ViewModels.Users.EditUserViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Edit Account";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Administration", Url = null },
+        new() { Text = "User Management", Url = "/Users" },
+        new() { Text = "Edit account", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = $"Edit account — {Model.UserName}",
+    Subtitle = "Profile details and role assignments. Identity fields that must never be edited from a " +
+        "form — password hash, security stamp, lockout counters — are not part of this model, so they " +
+        "cannot be supplied by a post."
+})
+
+<form asp-controller="Users" asp-action="Edit" asp-route-id="@Model.Id" method="post" novalidate>
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+    <div class="netra-users__form">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                    Identity
+                </h2>
+                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                {
+                    Text = Model.StatusLabel,
+                    Tone = Model.StatusTone
+                })
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-field">
+                    <label class="netra-label">Username</label>
+                    <input class="netra-input netra-input--readonly" type="text" value="@Model.UserName" readonly />
+                    <p class="netra-field__hint">
+                        The sign-in name is fixed when the account is created.
+                        @* Not posted: a read-only input has no name attribute, so it cannot be forged. *@
+                    </p>
+                </div>
+
+                <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Email)) ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="Email">Email address</label>
+                    <input class="netra-input" asp-for="Email" type="email" maxlength="256" required />
+                    <span asp-validation-for="Email" class="netra-field__error"></span>
+                </div>
+
+                @if (Model.IsSelf)
+                {
+                    <div class="netra-alert netra-alert--warning" role="status">
+                        This is your own account. NETRA will refuse to remove the administrator role
+                        from it, or to deactivate it, while you are signed in.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Persons))</span>
+                    Officer details
+                </h2>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-users__pair">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.FirstName)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="FirstName">First name</label>
+                        <input class="netra-input" asp-for="FirstName" type="text" maxlength="100" required />
+                        <span asp-validation-for="FirstName" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.LastName)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="LastName">Last name</label>
+                        <input class="netra-input" asp-for="LastName" type="text" maxlength="100" required />
+                        <span asp-validation-for="LastName" class="netra-field__error"></span>
+                    </div>
+                </div>
+
+                <div class="netra-users__pair">
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.BadgeNumber)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="BadgeNumber">Badge number (optional)</label>
+                        <input class="netra-input" asp-for="BadgeNumber" type="text" maxlength="50" />
+                        <p class="netra-field__hint">Must be unique across accounts when supplied.</p>
+                        <span asp-validation-for="BadgeNumber" class="netra-field__error"></span>
+                    </div>
+                    <div class="netra-field @(ViewData.ModelState.ContainsKey(nameof(Model.Rank)) ? "netra-field--invalid" : null)">
+                        <label class="netra-label" asp-for="Rank">Rank (optional)</label>
+                        <input class="netra-input" asp-for="Rank" type="text" maxlength="100" />
+                        <span asp-validation-for="Rank" class="netra-field__error"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <h2 class="netra-card__title">
+                    <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                    NETRA roles
+                </h2>
+                <span class="netra-badge netra-badge--neutral">At least one required</span>
+            </div>
+            <div class="netra-card__body">
+                <p class="netra-muted netra-users__roles-hint">
+                    Changing this selection replaces the account's role membership and is written to
+                    the audit trail with the before and after values.
+                </p>
+                <div class="netra-users__roles-list">
+                    @foreach (var role in Model.RoleOptions)
+                    {
+                        <label class="netra-check" for="role-@role.Replace(" ", "-")">
+                            <input type="checkbox" id="role-@role.Replace(" ", "-")"
+                                   name="Roles" value="@role"
+                                   checked="@(Model.Roles.Contains(role))" />
+                            <span>@role</span>
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="Roles" class="netra-field__error"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="netra-form__actions netra-mt-4">
+        <a class="netra-btn netra-btn--outline"
+           asp-controller="Users" asp-action="Details" asp-route-id="@Model.Id">Back to account</a>
+        <button type="submit" class="netra-btn netra-btn--primary">Save changes</button>
+    </div>
+</form>

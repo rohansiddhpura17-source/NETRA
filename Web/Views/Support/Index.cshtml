@@ -1,0 +1,428 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Support";
+
+    var currentUser = ViewData["CurrentUser"] as CurrentUserViewModel;
+    var roles = ViewData["CurrentUserRoles"] as IReadOnlyList<string> ?? Array.Empty<string>();
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Support", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Support",
+    Subtitle = "How NETRA works, what each module is for, and how your access to it is decided. " +
+        "Everything below describes this installation as it is built today — no invented " +
+        "telephone numbers, portals or support teams.",
+    Meta = new HtmlString(currentUser is null
+        ? "Signed in"
+        : $"{currentUser.DisplayName} ({currentUser.UserName})")
+})
+
+<div class="netra-help">
+    <nav class="netra-chips" aria-label="On this page">
+        <a class="netra-chip" href="#netra-is">What NETRA is</a>
+        <a class="netra-chip" href="#getting-around">Getting around</a>
+        <a class="netra-chip" href="#your-access">Your access</a>
+        <a class="netra-chip" href="#modules">Modules</a>
+        <a class="netra-chip" href="#workflows">Workflows</a>
+        <a class="netra-chip" href="#how-access-works">How access is decided</a>
+        <a class="netra-chip" href="#audit">What is recorded</a>
+        <a class="netra-chip" href="#settings">Your settings</a>
+        <a class="netra-chip" href="#help-channel">Getting help here</a>
+        <a class="netra-chip" href="#faq">Questions</a>
+    </nav>
+
+    <section class="netra-help__section" id="netra-is">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Dashboard))What NETRA is
+        </h2>
+        <p class="netra-help__text">
+            NETRA is a case-centred crime intelligence workstation. Records live in one place —
+            cases, people, locations, evidence, investigation notes and a timeline — and the
+            analytical modules (crime map, analytics, risk and anomaly detection, network and link
+            analysis) all read from those same records rather than from a second copy of the data.
+            Every screen is rendered by the server: there is no client-side application in the
+            browser, and a page you can see is a page the server was allowed to build for you.
+        </p>
+        <ul class="netra-help__list">
+            <li><strong>Cases</strong> are the unit of work. Everything else attaches to one.</li>
+            <li><strong>Derived analysis never invents data.</strong> Risk scores, anomalies,
+                alerts and network graphs are computed from stored records and say so.</li>
+            <li><strong>Changes are written to an audit trail</strong> with the actor, the field,
+                and the before and after values.</li>
+        </ul>
+    </section>
+
+    <section class="netra-help__section" id="getting-around">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Menu))Getting around
+        </h2>
+        <p class="netra-help__text">
+            The sidebar is grouped the same way for everyone; entries you are not authorised to
+            open are simply not listed, and the server still enforces the rule independently.
+        </p>
+        <ul class="netra-help__list">
+            <li><strong>Intelligence</strong> — Dashboard, Crime Map, Crime Analytics, Risk &amp;
+                Anomaly Analysis.</li>
+            <li><strong>Operations</strong> — Crime Cases, and the Investigations, Persons &amp;
+                Suspects and Evidence indexes that are still placeholders. Per-case work happens
+                inside a case.</li>
+            <li><strong>Analysis</strong> — Network &amp; Link Analysis, Image Investigation.</li>
+            <li><strong>Intelligence (tooling)</strong> — AI Assistant, Alerts, Reports.</li>
+            <li><strong>Data</strong> — Bulk Data Import.</li>
+            <li><strong>Administration</strong> — User Management, Audit Logs.</li>
+            <li><strong>Settings</strong> — Account, Security, Notifications, Appearance, and
+                System preferences for administrators.</li>
+            <li><strong>Support</strong> — this page. The bell in the top bar opens your
+                notification inbox.</li>
+        </ul>
+        <p class="netra-help__text">
+            On a narrow screen the sidebar collapses behind the menu control in the top bar. That
+            control is a plain CSS disclosure — there is still no script involved.
+        </p>
+    </section>
+
+    <section class="netra-help__section" id="your-access">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))Your access right now
+        </h2>
+        <p class="netra-help__text">
+            Read from your own session — this is what the server holds for you, not what a page
+            chose to display.
+        </p>
+        <div class="netra-card">
+            <div class="netra-card__body">
+                <dl class="netra-facts">
+                    <div>
+                        <dt>Signed in as</dt>
+                        <dd>@(currentUser?.UserName ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt>Name on file</dt>
+                        <dd>@(currentUser?.DisplayName ?? "—")</dd>
+                    </div>
+                    <div>
+                        <dt>Badge</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(currentUser?.BadgeNumber) ? "Not recorded" : currentUser.BadgeNumber)</dd>
+                    </div>
+                    <div>
+                        <dt>Rank</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(currentUser?.Rank) ? "Not recorded" : currentUser.Rank)</dd>
+                    </div>
+                </dl>
+                <p class="netra-help__text netra-mt-3">
+                    <strong>Roles held:</strong>
+                    @(roles.Count == 0 ? "None assigned — a System Administrator must assign at least one role before any module opens." : string.Join(", ", roles))
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="netra-help__section" id="modules">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))Module guidance
+        </h2>
+        <ul class="netra-help__list">
+            <li><strong>Dashboard</strong> (<code>/Dashboard</code>, also reached from <code>/</code>) — the working overview:
+                case counts, severity and status mix, recent activity. Open to every
+                case-working role.</li>
+            <li><strong>Crime Cases</strong> (<code>/Cases</code>) — search and filter the register,
+                open a case, and work its people, locations, evidence, notes and timeline.
+                Creating and editing need the case policies, which every case-working role
+                holds; removing notes or timeline entries is limited to supervisors.</li>
+            <li><strong>Crime Map</strong> (<code>/map</code>) — a server-drawn schematic map of
+                recorded incident locations with filters. It projects stored coordinates; it is
+                not a street mapping service and has no map tiles to load.</li>
+            <li><strong>Crime Analytics</strong> (<code>/analytics</code>) — trends, crime-type
+                mix, district and station breakdowns, rendered as SVG charts. Administrators,
+                Senior Officers and Analysts.</li>
+            <li><strong>Risk &amp; Anomaly Analysis</strong> (<code>/risk</code>) — indicator-based
+                risk assessments of cases and areas, plus detected anomalies, each with the
+                evidence that produced the score. Same three roles.</li>
+            <li><strong>Network &amp; Link Analysis</strong> (<code>/network</code>) — entities and
+                the shared-people, shared-location and same-type links the records imply, drawn
+                server-side. Same three roles.</li>
+            <li><strong>Image Investigation</strong> (<code>/image-investigation</code>) — stage an
+                image and receive candidate leads. The comparison provider in this deployment is
+                deterministic and the results are labelled as candidate leads, not identifications.
+                Administrators, Investigators and Analysts.</li>
+            <li><strong>AI Assistant</strong> (<code>/assistant</code>) — question answering over
+                analytics, district, risk and person-association queries. It phrases results the
+                query layer already produced; it does not have a wider view of the data than the
+                policy behind each question allows. Administrators, Senior Officers and Analysts.</li>
+            <li><strong>Alerts</strong> (<code>/alerts</code>) — generated leads: crime spikes,
+                unusual patterns, high-risk areas, related cases and security/system events.
+                Acknowledge, resolve or dismiss; generation and triage transitions need the
+                manage policy. All four roles can read them.</li>
+            <li><strong>Notifications</strong> (<code>/notifications</code>) — your own inbox,
+                created from alerts your role receives. Mark one read or all read.</li>
+            <li><strong>Reports</strong> (<code>/reports</code>) — generated documents assembled
+                from case, risk and analytics data. Reading is open to case workers; analytical
+                report content (risk, trend, executive) is gated separately, and generating or
+                archiving needs the manage policy. Export is a print-formatted page.</li>
+            <li><strong>Bulk Data Import</strong> (<code>/BulkImport</code>) — CSV intake in four
+                explicit stages: upload, validate, preview, confirm. Nothing becomes a case until
+                you confirm. Administrators, Senior Officers and Analysts.</li>
+            <li><strong>User Management</strong> (<code>/Users</code>) — accounts, roles and
+                account state. System Administrators only.</li>
+            <li><strong>Audit Logs</strong> (<code>/AuditLogs</code>) — the recorded trail of
+                changes and security events, filterable and readable per record. Administrators,
+                Senior Officers and Analysts.</li>
+            <li><strong>Settings</strong> (<code>/settings</code>) — your own profile, password,
+                notification categories and display choices. Every signed-in user sees only their
+                own.</li>
+        </ul>
+    </section>
+
+    <section class="netra-help__section" id="workflows">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Investigation))Common workflows
+        </h2>
+
+        <h3 class="netra-help__title">Register a case and work it</h3>
+        <ol class="netra-help__list">
+            <li>Crime Cases → New case: incident date, crime type, severity, status, district and
+                police station, and a description.</li>
+            <li>Open the case and add what you have: people (suspects, victims, witnesses),
+                locations, evidence files, investigation notes, timeline events.</li>
+            <li>Assign an investigator if the case is not yours. Assignment is a separate
+                permission from editing the case itself.</li>
+            <li>Every step writes its own audit record, so the case can be reconstructed later.</li>
+        </ol>
+
+        <h3 class="netra-help__title">Import cases from a CSV</h3>
+        <ol class="netra-help__list">
+            <li>Bulk Data Import → choose the file. The page lists the exact columns, allowed
+                values and row limit for this installation.</li>
+            <li>Validate: the job reports accepted, rejected, duplicate and warning rows before
+                anything is written.</li>
+            <li>Preview the rows that would be created.</li>
+            <li>Confirm. Only this last step registers cases, and the result page breaks down
+                what happened.</li>
+        </ol>
+
+        <h3 class="netra-help__title">Produce a report</h3>
+        <ol class="netra-help__list">
+            <li>Reports → generate, choosing the document type. The content is assembled from
+                stored records at that moment.</li>
+            <li>Open the report and add the authoring text; the analytical body stays as
+                generated.</li>
+            <li>Print or export from the report page. The layout is a print stylesheet, not a
+                client-side renderer.</li>
+        </ol>
+
+        <h3 class="netra-help__title">Work the alert queue</h3>
+        <ol class="netra-help__list">
+            <li>Alerts → filter by category, severity or status.</li>
+            <li>Open one and read why it fired — the alert text names the records and window it
+                came from.</li>
+            <li>Acknowledge while you work it, then resolve or dismiss with reason. Transitions
+                are audited; the same finding does not fire twice while a dedupe key is live.</li>
+        </ol>
+
+        <h3 class="netra-help__title">Ask the assistant a question</h3>
+        <ol class="netra-help__list">
+            <li>AI Assistant → pick a session or start one.</li>
+            <li>Ask within the supported intents (analytics, district, risk, person association).
+                Out-of-scope questions are refused rather than guessed at.</li>
+            <li>The answer cites the numbers the query layer returned; the session and its
+                questions are recorded.</li>
+        </ol>
+    </section>
+
+    <section class="netra-help__section" id="how-access-works">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Key))How access is decided
+        </h2>
+        <p class="netra-help__text">
+            NETRA has four roles: <strong>System Administrator</strong>,
+            <strong>Senior Officer</strong>, <strong>Police / Intelligence Analyst</strong> and
+            <strong>Investigator</strong>. A role is never checked page by page in the views; each
+            action declares the policy it needs, and the policies are registered at startup.
+            Three consequences are worth knowing:
+        </p>
+        <ul class="netra-help__list">
+            <li><strong>A missing link is not a refusal.</strong> The sidebar hides what you may
+                not open, and that is presentation only. Requesting the URL anyway is answered by
+                the server with a 403 page — the same answer either way.</li>
+            <li><strong>Some content is gated inside an allowed page.</strong> A report or an
+                alert may carry analytical content your role does not cover; the content gate
+                applies even though the list page opened.</li>
+            <li><strong>Being signed in is not enough on its own.</strong> An account with no role
+                can reach its own settings and this page, and nothing else.</li>
+        </ul>
+        <p class="netra-help__text">
+            If you believe a page should be open to you, the change is a role assignment made in
+            User Management by a System Administrator — it cannot be made from a settings screen,
+            and roles are never accepted from a form.
+        </p>
+    </section>
+
+    <section class="netra-help__section" id="audit">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))What is recorded
+        </h2>
+        <p class="netra-help__text">
+            Meaningful changes are written to the audit trail: case and record changes,
+            assignments, evidence uploads, alert transitions, report actions, every import stage,
+            account administration, and your own settings changes. Each entry carries the entity,
+            the action, the actor, the field and the before/after values, plus the timestamp.
+        </p>
+        <p class="netra-help__text">
+            What is never recorded: passwords, password hashes, security stamps, reset tokens,
+            API keys or secret configuration values. A password change writes only the fact that
+            the password changed. Entries are read-only: the application offers no way to edit or
+            delete the trail from a screen.
+        </p>
+    </section>
+
+    <section class="netra-help__section" id="settings">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Settings))Your settings
+        </h2>
+        <ul class="netra-help__list">
+            <li><strong>Account</strong> (<code>/settings/account</code>) — your first name, last
+                name, badge number and rank. Username, email and roles are read-only here.</li>
+            <li><strong>Security</strong> (<code>/settings/security</code>) — change your password
+                with your current one, and see your account's sign-in state.</li>
+            <li><strong>Notifications</strong> (<code>/settings/notifications</code>) — switch the
+                alert categories that create new inbox items for you.</li>
+            <li><strong>Appearance</strong> (<code>/settings/appearance</code>) — row spacing and
+                motion, applied by the server.</li>
+            <li><strong>System preferences</strong> (<code>/settings/system-preferences</code>) — administrators
+                only, read-only.</li>
+        </ul>
+        <p class="netra-help__text">
+            All of it is scoped to your own account. There is no user picker anywhere in Settings:
+            the server takes your identity from the session cookie, so a hand-crafted request
+            cannot aim a change at somebody else's profile or preferences.
+        </p>
+    </section>
+
+    <section class="netra-help__section" id="help-channel">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Support))Getting help here
+        </h2>
+        <div class="netra-alert netra-alert--warning" role="status">
+            <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+            <div class="netra-alert__body">
+                This installation has <strong>no external support channel and no support-request
+                form</strong>. There is no ticket record type, no configured recipient address and
+                no message delivery of any kind, so a form here would take your words and quietly
+                throw them away. If something is broken or an access question cannot be answered
+                from this page, raise it with the <strong>System Administrator for this
+                deployment</strong> through whatever channel your organisation runs outside NETRA.
+            </div>
+        </div>
+        <p class="netra-help__text">
+            Before you do, the two things that make an administrative answer faster are the URL you
+            were on and the time you saw it — the audit trail is indexed by both, so a specific
+            moment can be found rather than argued about.
+        </p>
+    </section>
+
+    <section class="netra-help__section" id="faq">
+        <h2 class="netra-help__title">
+            @Html.Raw(NetraIconPaths.Render(NetraIcon.Help))Common questions
+        </h2>
+
+        <details>
+            <summary>Why can I not change my own email address or username?</summary>
+            <p class="netra-help__answer">
+                Both identify the account: the username is what you type at sign-in and the email
+                is what password recovery would address. Letting any signed-in user rewrite them
+                would let a compromised session hand an account to somebody else without a second
+                approver. A System Administrator changes them in User Management, where the change
+                is audited against the administrator's own identity.
+            </p>
+        </details>
+
+        <details>
+            <summary>I forgot my password. What now?</summary>
+            <p class="netra-help__answer">
+                The sign-in page's Forgot password step cannot help you today: it records the
+                request but this deployment has no mail provider, so a reset link cannot be
+                delivered — and User Management has no "set a new password" action either.
+                Recovery has to be performed outside the application by the owner of this
+                installation. If you can still sign in, change the password yourself on the
+                Security settings page; that rotates the account's security stamp, so your other
+                sessions stop at their next revalidation.
+            </p>
+        </details>
+
+        <details>
+            <summary>Why do I get no notifications by email?</summary>
+            <p class="netra-help__answer">
+                Notifications in this deployment are delivered in-application only. There is no
+                SMTP configuration, so the notification pages offer no email or SMS choices —
+                offering a channel that cannot deliver would be a lie in a checkbox.
+            </p>
+        </details>
+
+        <details>
+            <summary>Analytics, risk, network or the assistant says 403 for me.</summary>
+            <p class="netra-help__answer">
+                Expected for the Investigator role. Those modules read across the whole data set
+                rather than a single case, so their policies cover System Administrators, Senior
+                Officers and Analysts. Your own cases, alerts, reports and dashboard stay open.
+            </p>
+        </details>
+
+        <details>
+            <summary>Can an audit entry be deleted or edited?</summary>
+            <p class="netra-help__answer">
+                Not from the application. Audit Logs has no edit or delete action, and the screens
+                that write the trail only append to it. Direct database work is a deployment
+                matter and is outside what this product does.
+            </p>
+        </details>
+
+        <details>
+            <summary>Does the AI assistant answer anything I ask?</summary>
+            <p class="netra-help__answer">
+                No. It handles the intents it is built for — analytics, district, risk and
+                person-association questions — and refuses the rest. Its answers are phrasings of
+                results the normal query layer produced, under the same policy as the pages those
+                numbers appear on.
+            </p>
+        </details>
+
+        <details>
+            <summary>Why is there no light theme or colour picker?</summary>
+            <p class="netra-help__answer">
+                NETRA ships one theme. The two preferences that exist — row spacing and motion —
+                are choices the server can apply by adding a class to the page it renders. A
+                customisable palette would mean a client-side theme system and stored CSS, which
+                this application deliberately does not have.
+            </p>
+        </details>
+
+        <details>
+            <summary>Why does a table sometimes scroll sideways?</summary>
+            <p class="netra-help__answer">
+                Wide tables are wrapped in a scroll container instead of being allowed to widen the
+                page. That keeps the sidebar and top bar intact at every width; scroll inside the
+                table frame rather than the window.
+            </p>
+        </details>
+
+        <details>
+            <summary>My notification inbox still shows a category I switched off.</summary>
+            <p class="netra-help__answer">
+                The preference decides whether new notifications of that category are created from
+                now on. Items already in your inbox are not removed, and the underlying alerts are
+                untouched — they remain in Alerts for the roles that can see them.
+            </p>
+        </details>
+    </section>
+</div>

@@ -1,0 +1,23 @@
+@{
+    Layout = null;
+    string? PageTitle = ViewData["Title"] as string;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@(string.IsNullOrWhiteSpace(PageTitle) ? "Sign in" : $"{PageTitle} · NETRA")</title>
+    <link rel="stylesheet" href="~/css/netra.css" asp-append-version="true" />
+</head>
+<body class="netra-auth">
+    <a class="netra-skip-link" href="#main-content">Skip to main content</a>
+
+    <main class="netra-auth__main" id="main-content">
+        @RenderBody()
+    </main>
+
+    <p class="netra-auth__legal">Authorized access only</p>
+</body>
+</html>

@@ -1,0 +1,201 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.Settings
+@model SystemSettingsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "System preferences";
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Settings", Url = "/settings" },
+        new() { Text = "System preferences", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "System preferences",
+    Subtitle = "What NETRA has recorded in its own setting tables, read-only. This page is for " +
+        "System Administrators, and there is deliberately nothing on it to edit.",
+    Meta = new HtmlString($"{Model.Preferences.Count} system preference(s) · {Model.SecuritySettings.Count} security setting(s)")
+})
+
+<div class="netra-settings__form">
+    <div class="netra-alert netra-alert--info" role="status">
+        <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Info))</span>
+        <div class="netra-alert__body">
+            The values that actually configure the running application — the database connection,
+            the AI provider endpoint, the file storage root, signing keys and every environment
+            variable — live in deployment configuration and are not read or displayed here. NETRA
+            exposes no editor for them, because a settings form that could rewrite its own runtime
+            configuration is a remote-code-execution path wearing a login screen. Changes to those
+            values are made by the deployment owner, in the deployment, and rolled out as a release.
+        </div>
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Sliders))</span>
+                Stored system preferences
+            </h2>
+            <span class="netra-badge netra-badge--neutral">Read-only</span>
+        </div>
+        <div class="netra-card__body netra-card__body--flush">
+            @if (Model.Preferences.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Icon = NetraIcon.Inbox,
+                    Title = "No system preferences are stored",
+                    Text = "The SystemPreferences table exists and is mapped, but no NETRA feature " +
+                        "writes a row to it. Nothing here is hidden — the application simply has no " +
+                        "stored system preferences yet, so there is no safe key to offer an editor for."
+                })
+            }
+            else
+            {
+                <div class="netra-tablewrap">
+                    <table class="netra-table">
+                        <caption class="netra-sr-only">Stored system preferences</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Key</th>
+                                <th scope="col">Value</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Updated</th>
+                                <th scope="col">Updated by</th>
+                                <th scope="col">Ownership</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var setting in Model.Preferences)
+                            {
+                                <tr>
+                                    <td><span class="netra-table__primary">@setting.Key</span></td>
+                                    <td>@setting.Value</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.Category) ? "—" : setting.Category)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.Description) ? "—" : setting.Description)</td>
+                                    <td>@setting.UpdatedAt.ToString("dd MMM yyyy HH:mm") UTC</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.UpdatedBy) ? "—" : setting.UpdatedBy)</td>
+                                    <td>
+                                        @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                        {
+                                            Text = setting.IsSystemOwned ? "System-owned" : "Editable in table",
+                                            Tone = setting.IsSystemOwned ? NetraTone.Warning : NetraTone.Neutral,
+                                            ShowDot = false
+                                        })
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                Stored security settings
+            </h2>
+            <span class="netra-badge netra-badge--neutral">Read-only</span>
+        </div>
+        <div class="netra-card__body netra-card__body--flush">
+            @if (Model.SecuritySettings.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Icon = NetraIcon.Lock,
+                    Title = "No security settings are stored",
+                    Text = "Identity's password and lockout rules come from the application's " +
+                        "Identity configuration, which is what the Security page already reports " +
+                        "to every user. This table would only hold policy the application reads, " +
+                        "and no policy is read from it today."
+                })
+            }
+            else
+            {
+                <div class="netra-tablewrap">
+                    <table class="netra-table">
+                        <caption class="netra-sr-only">Stored security settings</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Key</th>
+                                <th scope="col">Value</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Updated</th>
+                                <th scope="col">Updated by</th>
+                                <th scope="col">Ownership</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var setting in Model.SecuritySettings)
+                            {
+                                <tr>
+                                    <td><span class="netra-table__primary">@setting.Key</span></td>
+                                    <td>@setting.Value</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.Category) ? "—" : setting.Category)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.Description) ? "—" : setting.Description)</td>
+                                    <td>@setting.UpdatedAt.ToString("dd MMM yyyy HH:mm") UTC</td>
+                                    <td>@(string.IsNullOrWhiteSpace(setting.UpdatedBy) ? "—" : setting.UpdatedBy)</td>
+                                    <td>
+                                        @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                        {
+                                            Text = setting.IsSystemOwned ? "System-owned" : "Operator-set",
+                                            Tone = setting.IsSystemOwned ? NetraTone.Warning : NetraTone.Neutral,
+                                            ShowDot = false
+                                        })
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="netra-card">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">
+                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Audit))</span>
+                What is administrated elsewhere
+            </h2>
+        </div>
+        <div class="netra-card__body">
+            <dl class="netra-facts">
+                <div>
+                    <dt>Accounts and roles</dt>
+                    <dd>User Management (/Users) — System Administrator only.</dd>
+                </div>
+                <div>
+                    <dt>Recorded changes</dt>
+                    <dd>Audit Logs (/AuditLogs) — Administrators, Senior Officers and Analysts.</dd>
+                </div>
+                <div>
+                    <dt>Alert generation</dt>
+                    <dd>Alerts (/Alerts) — generated from analytics, not configured by hand.</dd>
+                </div>
+                <div>
+                    <dt>Bulk import limits</dt>
+                    <dd>Bulk Data Import (/BulkImport) — documented on its own page.</dd>
+                </div>
+            </dl>
+            <p class="netra-settings__note netra-mt-3">
+                Personal settings for the signed-in account are on the other Settings pages. An
+                administrator cannot change another user's profile, password or preferences from
+                this screen; only the account's name, contact details and roles can be edited, and
+                that happens in User Management where the change is audited.
+            </p>
+        </div>
+    </div>
+</div>

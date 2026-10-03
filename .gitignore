@@ -1,0 +1,37 @@
+# Build output and intermediate files
+bin/
+obj/
+publish/
+artifacts/
+
+# Test output
+TestResults/
+*.trx
+*.coverage
+coverage*.xml
+
+# Runtime data: uploaded evidence, image uploads and import staging files
+App_Data/
+
+# Logs
+logs/
+*.log
+
+# User secrets (connection strings and dev credentials live outside the working tree).
+# dotnet user-secrets stores these under the user profile; the entries are ignored here
+# in case a local project-relative store is ever used.
+secrets.json
+*.usersecrets
+
+# Local environment overrides that may carry credentials
+*.env
+.env.*
+appsettings.Local.json
+appsettings.*.local.json
+
+# IDE and OS
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store

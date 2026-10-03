@@ -1,0 +1,150 @@
+@using NETRA.Application.ImageInvestigation
+@using NETRA.Web.Models.Ui
+@using NETRA.Web.Models.ViewModels.ImageInvestigation
+@model ImageMatchDetailsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Candidate Match Details";
+
+    var detail = Model.Detail;
+
+    string ScoreLabel(decimal score) =>
+        $"{Math.Round(score * 100m, 0, MidpointRounding.AwayFromZero):0}%";
+
+    string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 0
+            ? "?"
+            : string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+}
+
+@await Html.PartialAsync("_Breadcrumbs", new BreadcrumbsModel
+{
+    Items = new List<BreadcrumbItemModel>
+    {
+        new() { Text = "Analysis", Url = null },
+        new() { Text = "Image-Assisted Investigation", Url = "/image-investigation" },
+        new() { Text = "Candidate Match Details", Url = null }
+    }
+})
+
+@await Html.PartialAsync("_PageHeader", new PageHeaderModel
+{
+    Title = "Candidate Match Details",
+    Subtitle = "Review the recorded context behind one potential match before acting on it."
+})
+
+<div class="netra-alert netra-alert--warning netra-image-disclaimer" role="note">
+    <span class="netra-alert__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+    <div class="netra-alert__body">
+        <strong>Investigative Lead &mdash; Verification Required.</strong>
+        This candidate is a synthetic, deterministic demo lead produced by NETRA's mock
+        provider. It does not confirm identity and does not indicate guilt.
+    </div>
+</div>
+
+<section class="netra-card netra-match-detail" aria-label="Candidate summary">
+    <div class="netra-card__header">
+        <h2 class="netra-card__title">Candidate</h2>
+        <span class="netra-badge netra-badge--primary netra-match-score">@ScoreLabel(detail.SimilarityScore) similarity</span>
+    </div>
+    <div class="netra-card__body">
+        <div class="netra-match-card__head">
+            <span class="netra-match-avatar" aria-hidden="true">@Initials(detail.DisplayName)</span>
+            <div class="netra-match-card__identity">
+                <strong>@detail.DisplayName</strong>
+                <span class="netra-muted netra-mono">@detail.Reference</span>
+            </div>
+        </div>
+        <dl class="netra-facts">
+            <div><dt>Comparison method</dt><dd>@detail.Method</dd></div>
+            <div><dt>Similarity score</dt><dd class="netra-mono">@detail.SimilarityScore.ToString("0.0000") (synthetic)</dd></div>
+            <div><dt>Detected</dt><dd>@detail.DetectedAt.ToString("dd MMM yyyy HH:mm") UTC</dd></div>
+        </dl>
+        <div class="netra-match-detail__actions">
+            <a class="netra-btn netra-btn--ghost" asp-controller="ImageInvestigation" asp-action="Index"
+               asp-route-record="@detail.SourceImageRecordId">Back to analysis</a>
+        </div>
+    </div>
+</section>
+
+<div class="netra-image-layout netra-image-layout--secondary">
+    <section class="netra-card" aria-label="Associated cases">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Associated Cases</h2>
+            <span class="netra-badge netra-badge--neutral">@detail.AssociatedCases.Count</span>
+        </div>
+        <div class="netra-card__body">
+            @if (detail.AssociatedCases.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No cases recorded",
+                    Text = "This candidate record has no case associations stored in NETRA.",
+                    Icon = NetraIcon.Alert
+                })
+            }
+            else
+            {
+                <ul class="netra-record-list">
+                    @foreach (var crimeCase in detail.AssociatedCases)
+                    {
+                        <li class="netra-record-list__item">
+                            <div>
+                                <strong>@crimeCase.CaseNumber &mdash; @crimeCase.Title</strong>
+                                <span class="netra-muted">@crimeCase.IncidentDateLabel</span>
+                            </div>
+                            <div class="netra-record-list__aside">
+                                @await Html.PartialAsync("_StatusBadge", new StatusBadgeModel
+                                {
+                                    Text = NetraDisplay.Words(crimeCase.Status.ToString()),
+                                    Tone = NetraTone.Neutral
+                                })
+                                <a class="netra-btn netra-btn--ghost netra-btn--sm"
+                                   asp-controller="Cases" asp-action="Details" asp-route-id="@crimeCase.Id">Details</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+
+    <section class="netra-card" aria-label="Related locations">
+        <div class="netra-card__header">
+            <h2 class="netra-card__title">Related Locations</h2>
+            <span class="netra-badge netra-badge--neutral">@detail.RelatedLocations.Count</span>
+        </div>
+        <div class="netra-card__body">
+            @if (detail.RelatedLocations.Count == 0)
+            {
+                @await Html.PartialAsync("_EmptyState", new EmptyStateModel
+                {
+                    Title = "No locations recorded",
+                    Text = "No locations are linked to the case context of this candidate.",
+                    Icon = NetraIcon.Alert
+                })
+            }
+            else
+            {
+                <ul class="netra-record-list">
+                    @foreach (var location in detail.RelatedLocations)
+                    {
+                        <li class="netra-record-list__item">
+                            <div>
+                                <strong>@location.Name</strong>
+                                <span class="netra-muted">@NetraDisplay.Words(location.Type)</span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </section>
+</div>
+
+<p class="netra-muted netra-match-footnote">
+    Use this lead to guide manual verification through authorised case records only.
+</p>
