@@ -45,11 +45,9 @@
         $"<span>District: {HtmlEncoder.Default.Encode(c.DistrictName ?? "—")}</span>" +
         $"<span class=\"{SeverityTextClass(c.Severity)}\">Severity: {HtmlEncoder.Default.Encode(c.Severity)}</span>"),
     Actions = (HtmlString)Html.Raw(
-        $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" asp-controller=\"Cases\" " +
-        $"asp-action=\"Details\" asp-route-id=\"{Model.CaseId}\">Back to case</a>" +
+        $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/Cases/Details/{Model.CaseId}\">Back to case</a>" +
         (Model.CanEdit
-            ? $"<a class=\"netra-btn netra-btn--primary netra-btn--sm\" asp-controller=\"Cases\" " +
-              $"asp-action=\"Edit\" asp-route-id=\"{Model.CaseId}\">Update case</a>"
+            ? $" <a class=\"netra-btn netra-btn--primary netra-btn--sm\" href=\"/Cases/Edit/{Model.CaseId}\">Update case</a>"
             : string.Empty))
 })
 

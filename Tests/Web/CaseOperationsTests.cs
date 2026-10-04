@@ -620,6 +620,22 @@ public class CaseOperationsTests : IClassFixture<NetraWebFactory>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task InvestigationWorkspace_ActionLinks_RenderRealHrefAttributesWithoutLiteralTagHelpers()
+    {
+        var client = await SignInAsync("workspace.links@netra.local", "Investigator");
+        var caseId = await CreateCaseAsync(client, "Links case");
+        var investigationId = await InvestigationIdForCaseAsync(caseId);
+
+        var html = await client.GetStringAsync($"/Investigations/Details/{investigationId}");
+
+        html.Should().Contain($"href=\"/Cases/Details/{caseId}\"");
+        html.Should().Contain($"href=\"/Cases/Edit/{caseId}\"");
+        html.Should().NotContain("asp-controller=");
+        html.Should().NotContain("asp-action=");
+        html.Should().NotContain("asp-route-id=");
+    }
+
     private async Task<Guid> InvestigationIdForCaseAsync(Guid caseId)
     {
         using var scope = _factory.Services.CreateScope();
