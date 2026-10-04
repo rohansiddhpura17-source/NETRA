@@ -50,6 +50,16 @@ public interface IBulkImportService
         Guid actorUserId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Retrieves the current validation outcome for a job without mutating state or staging rows.
+    /// Returns the staged validation details if already validated, or a pending validation DTO
+    /// indicating that validation has not yet been executed.
+    /// </summary>
+    Task<OperationResult<BulkImportValidationDto>> GetValidationAsync(
+        Guid jobId,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Read-only preview of the rows an import would accept.</summary>
     Task<OperationResult<BulkImportPreviewDto>> PreviewAsync(
         Guid jobId,

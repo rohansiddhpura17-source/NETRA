@@ -263,6 +263,50 @@ public sealed class BulkImportService : IBulkImportService
 
     // --------------------------------------------------------------------------- staging
 
+    public async Task<OperationResult<BulkImportValidationDto>> GetValidationAsync(
+        Guid jobId,
+        Guid actorUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var staged = await LoadStagedJobAsync(jobId, actorUserId, cancellationToken);
+
+        if (staged.Access != JobAccess.Available)
+        {
+            return Denial<BulkImportValidationDto>(staged.Access);
+        }
+
+        var job = staged.Job;
+
+        if (staged.Totals.StagedRows > 0)
+        {
+            return OperationResult<BulkImportValidationDto>.Success(
+                await BuildPersistedValidationAsync(job, staged, cancellationToken));
+        }
+
+        if (job.Status == ImportStatus.Pending)
+        {
+            return OperationResult<BulkImportValidationDto>.Success(new BulkImportValidationDto
+            {
+                Job = ToDto(job, staged.CreatedByName, staged.Totals, canImport: false, awaitingValidation: true),
+                TotalRows = 0,
+                ValidRows = 0,
+                InvalidRows = 0,
+                DuplicateRows = 0,
+                WarningRows = 0,
+                Issues = Array.Empty<BulkImportIssueDto>(),
+                IssuesTruncated = false,
+                ProblemRows = Array.Empty<BulkImportRowDto>(),
+                ValidatedAt = job.CreatedAt,
+                SchemaName = BulkImportSchema.CaseImportType
+            });
+        }
+
+        return OperationResult<BulkImportValidationDto>.ValidationFailed(new Dictionary<string, string[]>
+        {
+            [""] = [$"This import is {StatusWords(job.Status)}."]
+        });
+    }
+
     public async Task<OperationResult<BulkImportValidationDto>> ValidateAsync(
         Guid jobId,
         Guid actorUserId,
