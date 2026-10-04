@@ -82,6 +82,8 @@ startup fail on that host's DNS lookup.
 | `Ai__Endpoint`, `Ai__Model`, `Ai__TimeoutSeconds` | Local model server | `http://localhost:11434`, `llama3.2`, `15` |
 | `NETRA_DEV_ADMIN_PASSWORD` | Development admin bootstrap password | no admin account is created |
 | `ASPNETCORE_URLS` | Bind addresses | `launchSettings.json` in Development |
+| `ASPNETCORE_HTTPS_PORT` | Public HTTPS port plain-HTTP requests are redirected to | the bound `https` endpoint, if any |
+| `Security__TrustedProxies` | Proxy IPs or CIDR blocks allowed to send `X-Forwarded-For` / `X-Forwarded-Proto` | empty: no forwarded header is read |
 
 `FileStorage__RootPath` may override the evidence store location
 (default `App_Data/evidence` under the content root).
@@ -1276,8 +1278,43 @@ Cookies: the Identity session cookie is `HttpOnly`, `SameSite=Lax` and — outsi
 Development — `Secure`, so it survives a TLS-terminating proxy without ever being sent over
 plain HTTP. The anti-forgery cookie is `HttpOnly`, `SameSite=Strict` and forced `Secure` on
 the same condition; Phase 15 measured that the framework leaves `Secure` off under
-`SameAsRequest`, so it is set explicitly. `UseHttpsRedirection` upgrades every plain-HTTP
-request with a `307`.
+`SameAsRequest`, so it is set explicitly.
+
+### Reverse proxy, TLS termination and the HTTPS port
+
+Production must be reached over HTTPS, and two settings make that true in both common
+topologies.
+
+- **Kestrel serves TLS directly** — bind an `https` URL, or set `ASPNETCORE_HTTPS_PORT` to the
+  public HTTPS port so `UseHttpsRedirection` knows where to send plain-HTTP requests. Measured:
+  with `ASPNETCORE_HTTPS_PORT=5232`, `GET /Account/Login`, `GET /css/netra.css` and an unknown
+  path over plain HTTP each answer `307` to the HTTPS origin.
+- **TLS terminates in front of NETRA** (IIS, NGINX, a container sidecar). The proxy then sends
+  plain HTTP, and unless the app recovers the original scheme every Secure cookie is issued for
+  a request the framework considers insecure: ASP.NET Core refuses to mint an anti-forgery token
+  over HTTP, so each form page fails outright. NETRA reads `X-Forwarded-For` and
+  `X-Forwarded-Proto` **only** from addresses listed in `Security:TrustedProxies`, each entry an
+  exact proxy IP (`127.0.0.1`) or a CIDR block (`10.0.0.0/8`):
+
+```bash
+Security__TrustedProxies__0=127.0.0.1 \
+ASPNETCORE_HTTPS_PORT=443 \
+ASPNETCORE_ENVIRONMENT=Production \
+./NETRA.Web
+```
+
+  With that configuration the published artifact was measured over plain HTTP with
+  `X-Forwarded-Proto: https`: `/Account/Login` renders (`200`), and the anti-forgery cookie is
+  issued `secure; samesite=strict; httponly`; a request for a non-`localhost` host also carries
+  `Strict-Transport-Security: max-age=2592000`, and an authorized redirect is built against the
+  `https` origin. Leave the list empty whenever NETRA is exposed directly — then no forwarded
+  header is read at all and a client cannot assert a scheme or a source address. A malformed
+  entry stops startup rather than being ignored, and `Tests/Web/ForwardedHeadersConfigurationTests.cs`
+  pins both the default (nothing processed) and the opt-in.
+
+An unproxied plain-HTTP Production instance is the one remaining way to reach that failure, and
+it is deliberate: serving sign-in over plain HTTP would set cookies the browser then discards.
+Point the operator at HTTPS instead of trusting a header.
 
 ### Backup, recovery and retention (operational recommendations)
 
@@ -1365,7 +1402,7 @@ dotnet test
 
 UI tests boot the real application with `WebApplicationFactory`, substituting an
 in-memory provider for SQL Server, so authentication and shell rendering are verified
-without a database server. The suite (996 tests) covers shell rendering, authentication
+without a database server. The suite (999 tests) covers shell rendering, authentication
 and authorization, the case module end to end (list filtering and pagination, case
 creation and editing, person/location associations, evidence, notes, timeline events,
 investigator assignment and the investigation workspace), the Phase 5 dashboard

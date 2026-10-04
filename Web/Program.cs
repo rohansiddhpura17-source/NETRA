@@ -87,6 +87,48 @@ builder.Services.Configure<Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions>(
     }
 });
 
+// TLS is commonly terminated by a reverse proxy, which leaves Kestrel receiving plain HTTP.
+// Outside Development both the Identity and the anti-forgery cookies are marked Secure, and
+// ASP.NET Core refuses to mint an anti-forgery token for a request it does not consider HTTPS,
+// so every form page would fail with an unhandled error. Forwarded headers restore the real
+// scheme — but only from proxies the operator names explicitly, because a header any client
+// can send would let a plain HTTP request claim to be secure. With no entry configured the
+// middleware reads no forwarded header at all.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    var proxies = builder.Configuration.GetSection("Security:TrustedProxies").Get<string[]>() ?? [];
+
+    foreach (var entry in proxies)
+    {
+        // An entry is an exact proxy address (203.0.113.4) or a CIDR block (10.0.0.0/8).
+        if (entry.Contains('/'))
+        {
+            if (!System.Net.IPNetwork.TryParse(entry, out var network))
+            {
+                throw new InvalidOperationException(
+                    $"Security:TrustedProxies contains '{entry}', which is not a CIDR block.");
+            }
+
+            options.KnownIPNetworks.Add(network);
+        }
+        else if (System.Net.IPAddress.TryParse(entry, out var address))
+        {
+            options.KnownProxies.Add(address);
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                $"Security:TrustedProxies contains '{entry}', which is not an IP address.");
+        }
+    }
+
+    if (proxies.Length > 0)
+    {
+        options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                                   | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    }
+});
+
 builder.Services.AddScoped<IdentitySeedService>();
 builder.Services.AddScoped<DemoCaseDataSeeder>();
 builder.Services.AddScoped<INetraUserContext, NetraUserContext>();
@@ -292,6 +334,11 @@ else
         "The UI will run against an existing database. Apply migrations manually with " +
         "'dotnet ef database update' when required.");
 }
+
+// Must run before anything that depends on the request scheme: HSTS, HTTPS redirection and
+// the cookies issued for the pages below. With no trusted proxies configured this reads
+// nothing, so a directly exposed instance keeps using the transport Kestrel actually sees.
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
