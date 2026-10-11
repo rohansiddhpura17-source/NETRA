@@ -155,9 +155,13 @@
                                     <td>
                                         @if (job.AwaitingValidation)
                                         {
-                                            <a class="netra-btn netra-btn--outline netra-btn--sm"
-                                               asp-controller="BulkImport" asp-action="Validate"
-                                               asp-route-id="@job.Id">Validate</a>
+                                            <form class="netra-inline-form"
+                                                  asp-controller="BulkImport"
+                                                  asp-action="Validate"
+                                                  asp-route-id="@job.Id"
+                                                  method="post">
+                                                <button type="submit" class="netra-btn netra-btn--outline netra-btn--sm">Validate</button>
+                                            </form>
                                         }
                                         else if (job.Status == ImportStatus.Validated)
                                         {

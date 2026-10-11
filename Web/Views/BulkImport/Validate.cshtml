@@ -191,8 +191,18 @@
             </p>
         }
 
-        <a class="netra-btn netra-btn--outline"
-           asp-controller="BulkImport" asp-action="Validate" asp-route-id="@job.Id">Re-validate</a>
+        @if (job.AwaitingValidation)
+        {
+            <form asp-controller="BulkImport" asp-action="Validate" asp-route-id="@job.Id" method="post" class="netra-inline-form">
+                <button class="netra-btn netra-btn--primary" type="submit">Validate file</button>
+            </form>
+        }
+        else
+        {
+            <form asp-controller="BulkImport" asp-action="Validate" asp-route-id="@job.Id" method="post" class="netra-inline-form">
+                <button class="netra-btn netra-btn--outline" type="submit">Re-validate</button>
+            </form>
+        }
 
         <form asp-controller="BulkImport" asp-action="Cancel" asp-route-id="@job.Id" method="post">
             <button class="netra-btn netra-btn--ghost" type="submit">Cancel this import</button>

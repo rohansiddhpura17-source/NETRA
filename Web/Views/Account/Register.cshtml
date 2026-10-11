@@ -1,0 +1,145 @@
+@using NETRA.Web.Models.Navigation
+@using NETRA.Web.Models.ViewModels
+@model RegisterViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Create account";
+}
+
+<div class="netra-auth__card" style="max-width: 480px;">
+    <div class="netra-auth__brand">
+        <span class="netra-auth__mark">@Html.Raw(NetraIconPaths.Render(NetraIcon.Appearance))</span>
+        <span class="netra-auth__name">NETRA</span>
+        <span class="netra-auth__tagline">Neural Threat Intelligence &amp; Response Analytics</span>
+    </div>
+
+    <div class="netra-auth__body">
+        <h1 class="netra-auth__title">Create account</h1>
+        <p class="netra-auth__lead">Register new personnel credentials to access the NETRA platform.</p>
+
+        <div asp-validation-summary="ModelOnly" class="netra-validation" role="alert"></div>
+
+        <form asp-controller="Account" asp-action="Register" method="post" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="netra-grid netra-grid--2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--netra-space-3, 0.75rem);">
+                <div class="netra-field @(ViewData.ModelState.ContainsKey("FirstName") && ViewData.ModelState["FirstName"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="FirstName">First name</label>
+                    <div class="netra-field__control">
+                        <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                        <input class="netra-input"
+                               asp-for="FirstName"
+                               type="text"
+                               autocomplete="given-name"
+                               autofocus
+                               required
+                               maxlength="100"
+                               aria-describedby="firstname-error" />
+                    </div>
+                    <span id="firstname-error" asp-validation-for="FirstName" class="netra-field__error"></span>
+                </div>
+
+                <div class="netra-field @(ViewData.ModelState.ContainsKey("LastName") && ViewData.ModelState["LastName"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                    <label class="netra-label" asp-for="LastName">Last name</label>
+                    <div class="netra-field__control">
+                        <input class="netra-input"
+                               asp-for="LastName"
+                               type="text"
+                               autocomplete="family-name"
+                               required
+                               maxlength="100"
+                               aria-describedby="lastname-error" />
+                    </div>
+                    <span id="lastname-error" asp-validation-for="LastName" class="netra-field__error"></span>
+                </div>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("UserName") && ViewData.ModelState["UserName"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="UserName">Username</label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.User))</span>
+                    <input class="netra-input"
+                           asp-for="UserName"
+                           type="text"
+                           autocomplete="username"
+                           required
+                           maxlength="100"
+                           aria-describedby="username-error" />
+                </div>
+                <span id="username-error" asp-validation-for="UserName" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("Email") && ViewData.ModelState["Email"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="Email">Email address</label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Mail))</span>
+                    <input class="netra-input"
+                           asp-for="Email"
+                           type="email"
+                           autocomplete="email"
+                           required
+                           maxlength="256"
+                           aria-describedby="email-error" />
+                </div>
+                <span id="email-error" asp-validation-for="Email" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("BadgeNumber") && ViewData.ModelState["BadgeNumber"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="BadgeNumber">Badge number <span class="netra-faint" style="font-size: 11px;">(optional)</span></label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                    <input class="netra-input"
+                           asp-for="BadgeNumber"
+                           type="text"
+                           maxlength="50"
+                           aria-describedby="badgenumber-error" />
+                </div>
+                <span id="badgenumber-error" asp-validation-for="BadgeNumber" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("Password") && ViewData.ModelState["Password"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="Password">Password</label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Lock))</span>
+                    <input class="netra-input"
+                           asp-for="Password"
+                           type="password"
+                           autocomplete="new-password"
+                           required
+                           aria-describedby="password-error" />
+                </div>
+                <p class="netra-field__hint" style="font-size: 11px; margin-top: 4px; color: var(--netra-text-muted);">
+                    At least 8 characters, including uppercase, lowercase, digit, and special character.
+                </p>
+                <span id="password-error" asp-validation-for="Password" class="netra-field__error"></span>
+            </div>
+
+            <div class="netra-field @(ViewData.ModelState.ContainsKey("ConfirmPassword") && ViewData.ModelState["ConfirmPassword"]!.Errors.Count > 0 ? "netra-field--invalid" : null)">
+                <label class="netra-label" asp-for="ConfirmPassword">Confirm password</label>
+                <div class="netra-field__control">
+                    <span class="netra-field__icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Key))</span>
+                    <input class="netra-input"
+                           asp-for="ConfirmPassword"
+                           type="password"
+                           autocomplete="new-password"
+                           required
+                           aria-describedby="confirmpassword-error" />
+                </div>
+                <span id="confirmpassword-error" asp-validation-for="ConfirmPassword" class="netra-field__error"></span>
+            </div>
+
+            <button type="submit" class="netra-btn netra-btn--primary netra-btn--lg netra-btn--block">
+                Create account
+            </button>
+        </form>
+    </div>
+
+    <div class="netra-auth__foot">
+        <span>
+            Already have an account?
+            <a class="netra-auth__backlink"
+               asp-controller="Account"
+               asp-action="Login">Back to sign in</a>
+        </span>
+    </div>
+</div>

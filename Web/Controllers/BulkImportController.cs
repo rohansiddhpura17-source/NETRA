@@ -119,14 +119,13 @@ public sealed class BulkImportController : Controller
     }
 
     /// <summary>
-    /// Runs validation for a job and shows its outcome. Validation is a read of the stored
-    /// file plus a rewrite of the job's own staging rows, so a plain GET is enough for the
-    /// "Validate" and "Re-validate" links; nothing here touches the case tables.
+    /// Displays the validation outcome for a job. This GET endpoint is strictly read-only:
+    /// it parses nothing, stages no rows, and performs zero database mutations.
     /// </summary>
     [HttpGet("/BulkImport/Validate/{id:guid}")]
     public async Task<IActionResult> Validate(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _imports.ValidateAsync(id, _actor.GetUserId(User), cancellationToken);
+        var result = await _imports.GetValidationAsync(id, _actor.GetUserId(User), cancellationToken);
 
         if (!result.Succeeded)
         {
@@ -142,6 +141,26 @@ public sealed class BulkImportController : Controller
             ShownIssues = validation.Issues,
             ShowImportButton = validation.Job.CanImport
         });
+    }
+
+    /// <summary>
+    /// Runs or re-runs validation for a job and redirects to the display page.
+    /// State mutations occur strictly within this POST endpoint with anti-forgery validation.
+    /// </summary>
+    [HttpPost("/BulkImport/Validate/{id:guid}")]
+    [ActionName("Validate")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ValidatePost(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _imports.ValidateAsync(id, _actor.GetUserId(User), cancellationToken);
+
+        if (!result.Succeeded)
+        {
+            TempData["Netra.Error"] = FirstMessage(result);
+            return RedirectToAction(nameof(Index));
+        }
+
+        return RedirectToAction(nameof(Validate), new { id });
     }
 
     /// <summary>Read-only look at the rows an import would accept. Imports nothing.</summary>

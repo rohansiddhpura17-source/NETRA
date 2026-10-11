@@ -82,7 +82,7 @@ public class AnomalyConfiguration : IEntityTypeConfiguration<Anomaly>
         builder.HasOne(a => a.ResolvedBy)
             .WithMany()
             .HasForeignKey(a => a.ResolvedById)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
 
@@ -169,7 +169,7 @@ public class NetworkRelationshipConfiguration : IEntityTypeConfiguration<Network
         builder.HasOne(nr => nr.TargetEntity)
             .WithMany(ne => ne.TargetRelationships)
             .HasForeignKey(nr => nr.TargetEntityId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(nr => nr.CreatedBy)
             .WithMany()

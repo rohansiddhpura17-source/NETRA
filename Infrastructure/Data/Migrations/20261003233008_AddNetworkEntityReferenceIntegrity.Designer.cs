@@ -2409,7 +2409,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Security.ApplicationUser", "ResolvedBy")
                         .WithMany()
                         .HasForeignKey("ResolvedById")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedTo");
 
@@ -2519,7 +2519,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Security.ApplicationUser", "SupervisingOfficer")
                         .WithMany()
                         .HasForeignKey("SupervisingOfficerId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedInvestigator");
 
@@ -2537,7 +2537,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Cases.CrimeType", "ParentCrimeType")
                         .WithMany("SubCrimeTypes")
                         .HasForeignKey("ParentCrimeTypeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("ParentCrimeType");
                 });
@@ -2552,7 +2552,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Geography.Location", "ParentLocation")
                         .WithMany("ChildLocations")
                         .HasForeignKey("ParentLocationId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("NETRA.Domain.Geography.PoliceStation", "PoliceStation")
                         .WithMany("Locations")
@@ -2679,7 +2679,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Security.ApplicationUser", "ResolvedBy")
                         .WithMany()
                         .HasForeignKey("ResolvedById")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("DetectedBy");
 
@@ -2727,7 +2727,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Intelligence.NetworkEntity", "TargetEntity")
                         .WithMany("TargetRelationships")
                         .HasForeignKey("TargetEntityId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("CreatedBy");
@@ -2963,7 +2963,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                     b.HasOne("NETRA.Domain.Security.Department", "ParentDepartment")
                         .WithMany("SubDepartments")
                         .HasForeignKey("ParentDepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("ParentDepartment");
                 });

@@ -418,12 +418,6 @@ public sealed class DemoCaseDataSeeder
     {
         var adminEmail = "admin@netra.local";
 
-        var admin = await _userManager.FindByEmailAsync(adminEmail);
-        if (admin is not null)
-        {
-            return (admin.Id, adminEmail);
-        }
-
         // Reuse the configured development password so demo data never introduces a
         // second hard-coded credential.
         var investigators = new[]
@@ -458,18 +452,28 @@ public sealed class DemoCaseDataSeeder
 
         foreach (var investigator in investigators)
         {
-            var result = await _userManager.CreateAsync(investigator, password);
-            if (!result.Succeeded)
+            var existing = await _userManager.FindByIdAsync(investigator.Id.ToString());
+            if (existing is null)
             {
-                _logger.LogError(
-                    "Failed to create demo investigator {Email}: {Errors}",
-                    investigator.Email,
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
+                var result = await _userManager.CreateAsync(investigator, password);
+                if (!result.Succeeded)
+                {
+                    _logger.LogError(
+                        "Failed to create demo investigator {Email}: {Errors}",
+                        investigator.Email,
+                        string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+                else
+                {
+                    await _userManager.AddToRoleAsync(investigator, "Investigator");
+                }
             }
-            else
-            {
-                await _userManager.AddToRoleAsync(investigator, "Investigator");
-            }
+        }
+
+        var admin = await _userManager.FindByEmailAsync(adminEmail);
+        if (admin is not null)
+        {
+            return (admin.Id, adminEmail);
         }
 
         var adminUser = new ApplicationUser

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using NETRA.Domain.Security;
 using NETRA.Web.Models.ViewModels;
+using NETRA.Web.Authorization;
 using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace NETRA.Web.Controllers;
@@ -15,16 +16,114 @@ public class AccountController : Controller
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly ILogger<AccountController> _logger;
 
     public AccountController(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole<Guid>> roleManager,
         ILogger<AccountController> logger)
     {
         _signInManager = signInManager;
         _userManager = userManager;
+        _roleManager = roleManager;
         _logger = logger;
+    }
+
+    [HttpGet("Register")]
+    [AllowAnonymous]
+    public IActionResult Register()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        return View(new RegisterViewModel());
+    }
+
+    [HttpPost("Register")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(RegisterViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var userName = model.UserName.Trim();
+        var email = model.Email.Trim();
+
+        if (await _userManager.FindByNameAsync(userName) is not null)
+        {
+            ModelState.AddModelError(nameof(model.UserName), "That username is already taken.");
+            return View(model);
+        }
+
+        if (await _userManager.FindByEmailAsync(email) is not null)
+        {
+            ModelState.AddModelError(nameof(model.Email), "That email address is already registered.");
+            return View(model);
+        }
+
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            FirstName = model.FirstName.Trim(),
+            LastName = model.LastName.Trim(),
+            UserName = userName,
+            Email = email,
+            BadgeNumber = string.IsNullOrWhiteSpace(model.BadgeNumber) ? null : model.BadgeNumber.Trim(),
+            EmailConfirmed = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await _userManager.CreateAsync(user, model.Password);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                if (error.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.Password), error.Description);
+                }
+                else if (error.Code.Contains("UserName", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.UserName), error.Description);
+                }
+                else if (error.Code.Contains("Email", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.Email), error.Description);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            return View(model);
+        }
+
+        const string defaultRole = NetraRoles.Investigator;
+        if (!await _roleManager.RoleExistsAsync(defaultRole))
+        {
+            await _roleManager.CreateAsync(new IdentityRole<Guid>
+            {
+                Name = defaultRole,
+                NormalizedName = defaultRole.ToUpperInvariant()
+            });
+        }
+        await _userManager.AddToRoleAsync(user, defaultRole);
+
+        _logger.LogInformation("New user registered: {UserName} ({UserId})", user.UserName, user.Id);
+
+        await _signInManager.SignInAsync(user, isPersistent: false);
+
+        TempData["Netra.Success"] = "Welcome to NETRA. Your account has been registered successfully.";
+        return RedirectToAction("Index", "Dashboard");
     }
 
     [HttpGet("Login")]

@@ -225,11 +225,105 @@ public class AuthenticationScreenTests : IClassFixture<NetraWebFactory>
     }
 
     [Fact]
+    public async Task Login_Get_LinksToRegister()
+    {
+        var client = CreateClient();
+
+        var html = await client.GetStringAsync("/Account/Login");
+
+        html.Should().Contain("/Account/Register");
+        html.Should().Contain("Create an account");
+    }
+
+    [Fact]
+    public async Task Register_Get_RendersFormAndBranding()
+    {
+        var client = CreateClient();
+
+        var response = await client.GetAsync("/Account/Register");
+        var html = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        html.Should().Contain("NETRA");
+        html.Should().Contain("Create account");
+        html.Should().Contain("name=\"FirstName\"");
+        html.Should().Contain("name=\"LastName\"");
+        html.Should().Contain("name=\"UserName\"");
+        html.Should().Contain("name=\"Email\"");
+        html.Should().Contain("name=\"Password\"");
+        html.Should().Contain("name=\"ConfirmPassword\"");
+        html.Should().Contain("name=\"BadgeNumber\"");
+        html.Should().Contain("/Account/Login");
+    }
+
+    [Fact]
+    public async Task Register_Post_WithoutAntiForgeryToken_IsRejected()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostAsync("/Account/Register", Form(
+            ("FirstName", "Jane"),
+            ("LastName", "Doe"),
+            ("UserName", "jane.doe"),
+            ("Email", "jane.doe@netra.local"),
+            ("Password", "ValidPassw0rd!"),
+            ("ConfirmPassword", "ValidPassw0rd!")));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Register_Post_WithMismatchedPassword_FailsValidation()
+    {
+        var client = CreateClient();
+
+        var token = ExtractAntiForgeryToken(await client.GetStringAsync("/Account/Register"));
+
+        var response = await client.PostAsync("/Account/Register", Form(
+            ("FirstName", "Jane"),
+            ("LastName", "Doe"),
+            ("UserName", "jane.mismatch"),
+            ("Email", "jane.mismatch@netra.local"),
+            ("Password", "ValidPassw0rd!"),
+            ("ConfirmPassword", "DifferentPassword1!"),
+            ("__RequestVerificationToken", token)));
+
+        var html = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        html.Should().Contain("The password and confirmation password do not match.");
+    }
+
+    [Fact]
+    public async Task Register_Post_WithValidData_CreatesUserAndReachesDashboard()
+    {
+        var client = CreateClient(allowRedirect: false);
+
+        var token = ExtractAntiForgeryToken(await client.GetStringAsync("/Account/Register"));
+
+        var response = await client.PostAsync("/Account/Register", Form(
+            ("FirstName", "Marcus"),
+            ("LastName", "Vance"),
+            ("UserName", "marcus.vance"),
+            ("Email", "marcus.vance@netra.local"),
+            ("BadgeNumber", "NETRA-REG-01"),
+            ("Password", "SecureRegPass1!"),
+            ("ConfirmPassword", "SecureRegPass1!"),
+            ("__RequestVerificationToken", token)));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        var dashboard = await client.GetAsync("/Dashboard");
+        dashboard.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task AuthenticationScreens_ContainNoJavaScript()
     {
         var client = CreateClient();
 
-        foreach (var path in new[] { "/Account/Login", "/Account/ForgotPassword" })
+        foreach (var path in new[] { "/Account/Login", "/Account/ForgotPassword", "/Account/Register" })
         {
             var html = await client.GetStringAsync(path);
 

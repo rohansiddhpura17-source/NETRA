@@ -72,6 +72,6 @@ public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
         builder.HasOne(d => d.ParentDepartment)
             .WithMany(d => d.SubDepartments)
             .HasForeignKey(d => d.ParentDepartmentId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

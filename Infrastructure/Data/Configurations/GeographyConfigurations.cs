@@ -39,7 +39,7 @@ public class LocationConfiguration : IEntityTypeConfiguration<Location>
         builder.HasOne(l => l.ParentLocation)
             .WithMany(l => l.ChildLocations)
             .HasForeignKey(l => l.ParentLocationId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
 

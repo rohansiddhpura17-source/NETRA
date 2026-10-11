@@ -47,7 +47,7 @@ public class CrimeCaseConfiguration : IEntityTypeConfiguration<CrimeCase>
         builder.HasOne(c => c.SupervisingOfficer)
             .WithMany()
             .HasForeignKey(c => c.SupervisingOfficerId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(c => c.Department)
             .WithMany()
@@ -116,7 +116,7 @@ public class CrimeTypeConfiguration : IEntityTypeConfiguration<CrimeType>
         builder.HasOne(ct => ct.ParentCrimeType)
             .WithMany(ct => ct.SubCrimeTypes)
             .HasForeignKey(ct => ct.ParentCrimeTypeId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
 

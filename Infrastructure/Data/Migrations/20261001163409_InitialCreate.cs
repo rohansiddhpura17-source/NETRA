@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -46,7 +46,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.ParentCrimeTypeId,
                         principalTable: "CrimeTypes",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -70,7 +70,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.ParentDepartmentId,
                         principalTable: "Departments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -357,7 +357,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.SupervisingOfficerId,
                         principalTable: "ApplicationUsers",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_CrimeCases_CrimeTypes_CrimeTypeId",
                         column: x => x.CrimeTypeId,
@@ -664,7 +664,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.EntityId,
                         principalTable: "CrimeCases",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -977,7 +977,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.ParentLocationId,
                         principalTable: "Locations",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_Locations_PoliceStations_PoliceStationId",
                         column: x => x.PoliceStationId,
@@ -1299,7 +1299,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                         column: x => x.TargetEntityId,
                         principalTable: "NetworkEntities",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(
@@ -2246,7 +2246,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                 column: "ResolvedById",
                 principalTable: "ApplicationUsers",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Alerts_CrimeCases_CrimeCaseId",
@@ -2270,7 +2270,7 @@ namespace NETRA.Infrastructure.Data.Migrations
                 column: "ResolvedById",
                 principalTable: "ApplicationUsers",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ApplicationUsers_PoliceStations_PoliceStationId",

@@ -132,6 +132,18 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
     private static FormUrlEncodedContent TokenForm(string token) =>
         new([new KeyValuePair<string, string>("__RequestVerificationToken", token)]);
 
+    private async Task<string> ValidateJobAsync(HttpClient client, Guid jobId)
+    {
+        var getHtml = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var token = TokenOf(getHtml);
+        var post = await client.PostAsync(
+            $"/BulkImport/Validate/{jobId}",
+            TokenForm(token));
+        post.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        post.Headers.Location!.ToString().Should().Be($"/BulkImport/Validate/{jobId}");
+        return await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+    }
+
     // ------------------------------------------------------------------ routes: anonymous
 
     [Fact]
@@ -148,6 +160,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
             await client.GetAsync($"/BulkImport/Preview/{id}"),
             await client.GetAsync($"/BulkImport/Result/{id}"),
             await client.PostAsync("/BulkImport/Upload", new FormUrlEncodedContent([])),
+            await client.PostAsync($"/BulkImport/Validate/{id}", new FormUrlEncodedContent([])),
             await client.PostAsync($"/BulkImport/Import/{id}", new FormUrlEncodedContent([])),
             await client.PostAsync($"/BulkImport/Cancel/{id}", new FormUrlEncodedContent([]))
         };
@@ -170,10 +183,12 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var index = await client.GetAsync("/BulkImport");
         var upload = await client.GetAsync("/BulkImport/Upload");
         var posted = await client.PostAsync($"/BulkImport/Cancel/{id}", new FormUrlEncodedContent([]));
+        var postValidate = await client.PostAsync($"/BulkImport/Validate/{id}", new FormUrlEncodedContent([]));
 
         index.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         upload.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         posted.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        postValidate.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Theory]
@@ -353,10 +368,8 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var (jobId, _) = await UploadAsync(client, "Clean batch", Batch("BXCLN", 3));
 
-        var response = await client.GetAsync($"/BulkImport/Validate/{jobId}");
-        var html = await response.Content.ReadAsStringAsync();
+        var html = await ValidateJobAsync(client, jobId);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         html.Should().Contain("Validation result");
         html.Should().Contain("Nothing has been imported yet.");
         html.Should().Contain("No problems found");
@@ -380,7 +393,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var (jobId, _) = await UploadAsync(client, "Rejected rows", csv);
 
-        var html = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var html = await ValidateJobAsync(client, jobId);
 
         html.Should().Contain("Problems found");
 
@@ -404,7 +417,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var client = await SignInAsync("import.preview@netra.local", "System Administrator");
 
         var (jobId, _) = await UploadAsync(client, "Preview batch", Batch("BXPVW", 2));
-        await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        await ValidateJobAsync(client, jobId);
 
         var response = await client.GetAsync($"/BulkImport/Preview/{jobId}");
         var html = await response.Content.ReadAsStringAsync();
@@ -459,7 +472,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var client = await SignInAsync("import.getimport@netra.local", "System Administrator");
 
         var (jobId, _) = await UploadAsync(client, "Get attempt", Batch("BXGET", 1));
-        await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        await ValidateJobAsync(client, jobId);
 
         var response = await client.GetAsync($"/BulkImport/Import/{jobId}");
 
@@ -478,8 +491,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var prefix = "BXWF1";
         var (jobId, _) = await UploadAsync(client, "October district register", Batch(prefix, 3));
 
-        var validateUrl = $"/BulkImport/Validate/{jobId}";
-        await client.GetStringAsync(validateUrl);
+        await ValidateJobAsync(client, jobId);
 
         var previewHtml = await client.GetStringAsync($"/BulkImport/Preview/{jobId}");
         (await CaseCountAsync(prefix)).Should().Be(0);
@@ -528,7 +540,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var (jobId, _) = await UploadAsync(client, "Duplicate batch", csv);
 
-        var validation = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var validation = await ValidateJobAsync(client, jobId);
         validation.Should().Contain("Skipped case numbers");
         validation.Should().Contain("Preview 2 accepted row(s)");
 
@@ -559,7 +571,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var prefix = "BXTKN";
         var (jobId, _) = await UploadAsync(client, "Token batch", Batch(prefix, 1));
-        await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        await ValidateJobAsync(client, jobId);
 
         var response = await client.PostAsync(
             $"/BulkImport/Import/{jobId}", new FormUrlEncodedContent([]));
@@ -579,7 +591,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var (jobId, _) = await UploadAsync(client, "All rejected", csv);
 
-        var validation = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var validation = await ValidateJobAsync(client, jobId);
         validation.Should().Contain("No row in this file passed validation");
         validation.Should().NotContain("Preview 0 accepted");
 
@@ -605,7 +617,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
 
         var prefix = "BXCXL";
         var (jobId, _) = await UploadAsync(client, "Cancelled batch", Batch(prefix, 2));
-        var validation = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var validation = await ValidateJobAsync(client, jobId);
 
         var cancelled = await client.PostAsync(
             $"/BulkImport/Cancel/{jobId}", TokenForm(TokenOf(validation)));
@@ -671,7 +683,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var prefix = "BXAUD";
         var (jobId, _) = await UploadAsync(client, "Audited batch", Batch(prefix, 2));
 
-        await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        await ValidateJobAsync(client, jobId);
         var previewHtml = await client.GetStringAsync($"/BulkImport/Preview/{jobId}");
         var imported = await client.PostAsync(
             $"/BulkImport/Import/{jobId}", TokenForm(TokenOf(previewHtml)));
@@ -728,7 +740,7 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         var client = await SignInAsync("import.nojs@netra.local", "System Administrator");
 
         var (jobId, _) = await UploadAsync(client, "No script batch", Batch("BXNJS", 2));
-        var validateHtml = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        var validateHtml = await ValidateJobAsync(client, jobId);
         var previewHtml = await client.GetStringAsync($"/BulkImport/Preview/{jobId}");
         var imported = await client.PostAsync(
             $"/BulkImport/Import/{jobId}", TokenForm(TokenOf(previewHtml)));
@@ -770,5 +782,148 @@ public sealed class BulkImportIntegrationTests : IClassFixture<NetraWebFactory>
         firstHtml.Should().NotContain("Operator B batch");
         secondHtml.Should().Contain("Operator B batch");
         secondHtml.Should().NotContain("Operator A batch");
+    }
+
+    // -------------------------------------------------------- P2: GET/POST validation isolation
+
+    [Fact]
+    public async Task Validate_GetRequest_ProducesZeroDatabaseMutation()
+    {
+        var client = await SignInAsync("import.getnomutate@netra.local", "System Administrator");
+
+        var (jobId, _) = await UploadAsync(client, "Pure GET batch", Batch("BXNOMUT", 2));
+
+        var initialJob = await JobAsync(jobId);
+        initialJob.Status.Should().Be(ImportStatus.Pending);
+
+        // Before GET: verify 0 staged records and errors
+        var initialRecordsCount = await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId));
+        var initialErrorsCount = await WithContextAsync(c => c.ImportErrors.CountAsync(e => e.ImportJobId == jobId));
+        initialRecordsCount.Should().Be(0);
+        initialErrorsCount.Should().Be(0);
+
+        // Issue GET request
+        var response = await client.GetAsync($"/BulkImport/Validate/{jobId}");
+        var html = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        html.Should().Contain("Validate file");
+
+        // After GET: absolutely zero mutation occurred
+        var afterJob = await JobAsync(jobId);
+        afterJob.Status.Should().Be(ImportStatus.Pending);
+        afterJob.TotalRecords.Should().Be(0);
+
+        var afterRecordsCount = await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId));
+        var afterErrorsCount = await WithContextAsync(c => c.ImportErrors.CountAsync(e => e.ImportJobId == jobId));
+        afterRecordsCount.Should().Be(0);
+        afterErrorsCount.Should().Be(0);
+
+        // Multiple subsequent GET requests remain completely idempotent and read-only
+        await client.GetAsync($"/BulkImport/Validate/{jobId}");
+        (await JobAsync(jobId)).Status.Should().Be(ImportStatus.Pending);
+        (await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId))).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Validate_PostRequest_ValidatesPendingJobAndPersistsRecords()
+    {
+        var client = await SignInAsync("import.postvalidates@netra.local", "System Administrator");
+
+        var (jobId, _) = await UploadAsync(client, "Post validates batch", Batch("BXPOSTV", 3));
+
+        var getHtml = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        getHtml.Should().Contain("Validate file");
+
+        var token = TokenOf(getHtml);
+        var postResponse = await client.PostAsync(
+            $"/BulkImport/Validate/{jobId}",
+            TokenForm(token));
+
+        postResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        postResponse.Headers.Location!.ToString().Should().Be($"/BulkImport/Validate/{jobId}");
+
+        var job = await JobAsync(jobId);
+        job.Status.Should().Be(ImportStatus.Validated);
+        job.TotalRecords.Should().Be(3);
+
+        var recordsCount = await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId));
+        recordsCount.Should().Be(3);
+
+        var finalHtml = await client.GetStringAsync($"/BulkImport/Validate/{jobId}");
+        finalHtml.Should().Contain("Validation result");
+        finalHtml.Should().Contain("Preview 3 accepted row(s)");
+    }
+
+    [Fact]
+    public async Task Validate_PostRequest_WithoutAntiForgeryToken_ReturnsBadRequest()
+    {
+        var client = await SignInAsync("import.notoken@netra.local", "System Administrator");
+
+        var (jobId, _) = await UploadAsync(client, "No token validation batch", Batch("BXNOTKN", 2));
+
+        var response = await client.PostAsync(
+            $"/BulkImport/Validate/{jobId}",
+            new FormUrlEncodedContent([]));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var job = await JobAsync(jobId);
+        job.Status.Should().Be(ImportStatus.Pending);
+        (await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId))).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Validate_PostRequest_UnauthorizedRole_ReturnsForbidden()
+    {
+        var client = await SignInAsync("import.unauthval@netra.local", "Investigator");
+
+        var id = Guid.NewGuid();
+        var response = await client.PostAsync($"/BulkImport/Validate/{id}", new FormUrlEncodedContent([]));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Validate_PostRequest_Anonymous_RedirectsToLogin()
+    {
+        var client = AnonymousClient();
+        var id = Guid.NewGuid();
+
+        var response = await client.PostAsync($"/BulkImport/Validate/{id}", new FormUrlEncodedContent([]));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.ToString().Should().Contain("/Account/Login");
+    }
+
+    [Fact]
+    public async Task Validate_PostRequest_InvalidOrForeignJobId_HandlesSafely()
+    {
+        var owner = await SignInAsync("import.valowner@netra.local", "System Administrator");
+        var stranger = await SignInAsync("import.valstranger@netra.local", "Police / Intelligence Analyst");
+
+        var (jobId, _) = await UploadAsync(owner, "Foreign validate batch", Batch("BXFORGN", 2));
+
+        // Random non-existent ID handled safely (redirects to index with error message, never 500)
+        var nonExistentId = Guid.NewGuid();
+        var nonExistentResponse = await owner.PostAsync(
+            $"/BulkImport/Validate/{nonExistentId}",
+            TokenForm(TokenOf(await owner.GetStringAsync("/BulkImport/Upload"))));
+
+        nonExistentResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        nonExistentResponse.Headers.Location!.ToString().Should().Be("/BulkImport");
+
+        // Stranger attempting to validate owner's job is denied safely
+        var strangerResponse = await stranger.PostAsync(
+            $"/BulkImport/Validate/{jobId}",
+            TokenForm(TokenOf(await stranger.GetStringAsync("/BulkImport/Upload"))));
+
+        strangerResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        strangerResponse.Headers.Location!.ToString().Should().Be("/BulkImport");
+
+        // The job remains in owner's pending state, untouched by stranger
+        var job = await JobAsync(jobId);
+        job.Status.Should().Be(ImportStatus.Pending);
+        (await WithContextAsync(c => c.ImportRecords.CountAsync(r => r.ImportJobId == jobId))).Should().Be(0);
     }
 }

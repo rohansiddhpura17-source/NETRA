@@ -50,7 +50,7 @@ public class AlertConfiguration : IEntityTypeConfiguration<Alert>
         builder.HasOne(a => a.ResolvedBy)
             .WithMany()
             .HasForeignKey(a => a.ResolvedById)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasMany(a => a.Notifications)
             .WithOne(n => n.Alert)

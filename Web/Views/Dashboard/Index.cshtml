@@ -26,6 +26,15 @@
         $"<span>{NetraIconPaths.Render(NetraIcon.Report)}</span>Export Report</a>")
 })
 
+@if (TempData["Netra.Success"] is string success)
+{
+    <div class="netra-alert netra-alert--success netra-mt-4" role="status">@success</div>
+}
+@if (TempData["Netra.Error"] is string failure)
+{
+    <div class="netra-alert netra-alert--danger netra-mt-4" role="alert">@failure</div>
+}
+
 <div class="netra-grid netra-grid--stats netra-mt-4">
     @foreach (var card in Model.StatCards)
     {
