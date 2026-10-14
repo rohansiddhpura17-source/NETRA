@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,18 @@ namespace NETRA.Tests.Web;
 /// </summary>
 public class NetraWebFactory : WebApplicationFactory<Program>
 {
+    public const string TestWebhookToken = "netra-test-webhook-token";
+    private readonly string? _webhookToken;
+
+    public NetraWebFactory() : this(TestWebhookToken)
+    {
+    }
+
+    internal NetraWebFactory(string? webhookToken)
+    {
+        _webhookToken = webhookToken;
+    }
+
     private readonly string _databaseName = Guid.NewGuid().ToString();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -29,6 +42,12 @@ public class NetraWebFactory : WebApplicationFactory<Program>
         builder.UseSetting(
             "FileStorage:RootPath",
             Path.Combine(Path.GetTempPath(), $"netra-web-storage-{_databaseName:N}"));
+
+        builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Webhook:Token"] = _webhookToken
+            }));
 
         builder.ConfigureTestServices(services =>
         {

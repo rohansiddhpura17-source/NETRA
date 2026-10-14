@@ -32,19 +32,14 @@ public class AccountController : Controller
     }
 
     [HttpGet("Register")]
-    [AllowAnonymous]
+    [Authorize(Policy = NetraPolicies.Administration)]
     public IActionResult Register()
     {
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            return RedirectToAction("Index", "Dashboard");
-        }
-
         return View(new RegisterViewModel());
     }
 
     [HttpPost("Register")]
-    [AllowAnonymous]
+    [Authorize(Policy = NetraPolicies.Administration)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
@@ -107,20 +102,8 @@ public class AccountController : Controller
             return View(model);
         }
 
-        const string defaultRole = NetraRoles.Investigator;
-        if (!await _roleManager.RoleExistsAsync(defaultRole))
-        {
-            await _roleManager.CreateAsync(new IdentityRole<Guid>
-            {
-                Name = defaultRole,
-                NormalizedName = defaultRole.ToUpperInvariant()
-            });
-        }
-        await _userManager.AddToRoleAsync(user, defaultRole);
 
         _logger.LogInformation("New user registered: {UserName} ({UserId})", user.UserName, user.Id);
-
-        await _signInManager.SignInAsync(user, isPersistent: false);
 
         TempData["Netra.Success"] = "Welcome to NETRA. Your account has been registered successfully.";
         return RedirectToAction("Index", "Dashboard");

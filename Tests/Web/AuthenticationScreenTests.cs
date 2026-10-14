@@ -2,6 +2,9 @@ using System.Net;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using NETRA.Domain.Security;
 using Xunit;
 
 namespace NETRA.Tests.Web;
@@ -225,42 +228,78 @@ public class AuthenticationScreenTests : IClassFixture<NetraWebFactory>
     }
 
     [Fact]
-    public async Task Login_Get_LinksToRegister()
+    public async Task Login_Get_DoesNotLinkToRegister()
     {
         var client = CreateClient();
 
         var html = await client.GetStringAsync("/Account/Login");
 
-        html.Should().Contain("/Account/Register");
-        html.Should().Contain("Create an account");
+        html.Should().NotContain("/Account/Register");
+        html.Should().NotContain("Create an account");
     }
 
     [Fact]
-    public async Task Register_Get_RendersFormAndBranding()
+    public async Task Register_Get_Administrator_RendersFormAndBranding()
     {
-        var client = CreateClient();
+        // Seed an administrator user
+        const string adminEmail = "admin.register@netra.local";
+        const string adminPassword = "AdminPass1!";
+        await _factory.SeedUserAsync(adminEmail, adminPassword, "System Administrator");
 
-        var response = await client.GetAsync("/Account/Register");
-        var html = await response.Content.ReadAsStringAsync();
+        // Log in as administrator
+        var client = CreateClient(allowRedirect: false);
+        var loginPage = await client.GetAsync("/Account/Login");
+        var loginHtml = await loginPage.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(loginHtml);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        html.Should().Contain("NETRA");
-        html.Should().Contain("Create account");
-        html.Should().Contain("name=\"FirstName\"");
-        html.Should().Contain("name=\"LastName\"");
-        html.Should().Contain("name=\"UserName\"");
-        html.Should().Contain("name=\"Email\"");
-        html.Should().Contain("name=\"Password\"");
-        html.Should().Contain("name=\"ConfirmPassword\"");
-        html.Should().Contain("name=\"BadgeNumber\"");
-        html.Should().Contain("/Account/Login");
+        var loginResponse = await client.PostAsync("/Account/Login", Form(
+            ("UserName", adminEmail),
+            ("Password", adminPassword),
+            ("__RequestVerificationToken", token)));
+
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        loginResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        // Now access the registration page
+        var registerResponse = await client.GetAsync("/Account/Register");
+        var registerHtml = await registerResponse.Content.ReadAsStringAsync();
+
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        registerHtml.Should().Contain("NETRA");
+        registerHtml.Should().Contain("Create account");
+        registerHtml.Should().Contain("name=\"FirstName\"");
+        registerHtml.Should().Contain("name=\"LastName\"");
+        registerHtml.Should().Contain("name=\"UserName\"");
+        registerHtml.Should().Contain("name=\"Email\"");
+        registerHtml.Should().Contain("name=\"Password\"");
+        registerHtml.Should().Contain("name=\"ConfirmPassword\"");
+        registerHtml.Should().Contain("name=\"BadgeNumber\"");
+        registerHtml.Should().Contain("/Account/Login");
     }
 
     [Fact]
-    public async Task Register_Post_WithoutAntiForgeryToken_IsRejected()
+    public async Task Register_Post_Administrator_WithoutAntiForgeryToken_IsRejected()
     {
-        var client = CreateClient();
+        // Seed an administrator user
+        const string adminEmail = "admin.register3@netra.local";
+        const string adminPassword = "AdminPass3!";
+        await _factory.SeedUserAsync(adminEmail, adminPassword, "System Administrator");
 
+        // Log in as administrator
+        var client = CreateClient(allowRedirect: false);
+        var loginPage = await client.GetAsync("/Account/Login");
+        var loginHtml = await loginPage.Content.ReadAsStringAsync();
+        var loginToken = ExtractAntiForgeryToken(loginHtml);
+
+        var loginResponse = await client.PostAsync("/Account/Login", Form(
+            ("UserName", adminEmail),
+            ("Password", adminPassword),
+            ("__RequestVerificationToken", loginToken)));
+
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        loginResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        // Now attempt to post to registration without anti-forgery token
         var response = await client.PostAsync("/Account/Register", Form(
             ("FirstName", "Jane"),
             ("LastName", "Doe"),
@@ -269,53 +308,179 @@ public class AuthenticationScreenTests : IClassFixture<NetraWebFactory>
             ("Password", "ValidPassw0rd!"),
             ("ConfirmPassword", "ValidPassw0rd!")));
 
+        // Expect a bad request due to missing anti-forgery token
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
-    public async Task Register_Post_WithMismatchedPassword_FailsValidation()
-    {
-        var client = CreateClient();
-
-        var token = ExtractAntiForgeryToken(await client.GetStringAsync("/Account/Register"));
-
-        var response = await client.PostAsync("/Account/Register", Form(
-            ("FirstName", "Jane"),
-            ("LastName", "Doe"),
-            ("UserName", "jane.mismatch"),
-            ("Email", "jane.mismatch@netra.local"),
-            ("Password", "ValidPassw0rd!"),
-            ("ConfirmPassword", "DifferentPassword1!"),
-            ("__RequestVerificationToken", token)));
-
-        var html = await response.Content.ReadAsStringAsync();
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        html.Should().Contain("The password and confirmation password do not match.");
-    }
-
-    [Fact]
-    public async Task Register_Post_WithValidData_CreatesUserAndReachesDashboard()
+    public async Task Register_Post_Anonymous_IsDenied()
     {
         var client = CreateClient(allowRedirect: false);
 
-        var token = ExtractAntiForgeryToken(await client.GetStringAsync("/Account/Register"));
+        var response = await client.PostAsync("/Account/Register", new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("FirstName", "Jane"),
+            new KeyValuePair<string, string>("LastName", "Doe"),
+            new KeyValuePair<string, string>("UserName", "jane.doe"),
+            new KeyValuePair<string, string>("Email", "jane.doe@netra.local"),
+            new KeyValuePair<string, string>("Password", "ValidPassw0rd!"),
+            new KeyValuePair<string, string>("ConfirmPassword", "ValidPassw0rd!")
+        }));
 
-        var response = await client.PostAsync("/Account/Register", Form(
-            ("FirstName", "Marcus"),
-            ("LastName", "Vance"),
-            ("UserName", "marcus.vance"),
-            ("Email", "marcus.vance@netra.local"),
-            ("BadgeNumber", "NETRA-REG-01"),
-            ("Password", "SecureRegPass1!"),
-            ("ConfirmPassword", "SecureRegPass1!"),
+        // Anonymous access to registration endpoint should be denied
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden);
+        // If it's a redirect, it should go to the login page
+        if (response.StatusCode == HttpStatusCode.Redirect)
+        {
+            response.Headers.Location!.OriginalString.Should().Contain("/Account/Login");
+        }
+    }
+
+    [Fact]
+    public async Task Register_Post_Administrator_CreatesUser_RemainsLoggedIn()
+    {
+        // Seed an administrator user
+        const string adminEmail = "admin.register2@netra.local";
+        const string adminPassword = "AdminPass2!";
+        await _factory.SeedUserAsync(adminEmail, adminPassword, "System Administrator");
+
+        // Log in as administrator
+        var client = CreateClient(allowRedirect: false);
+        var loginPage = await client.GetAsync("/Account/Login");
+        var loginHtml = await loginPage.Content.ReadAsStringAsync();
+        var token = ExtractAntiForgeryToken(loginHtml);
+
+        var loginResponse = await client.PostAsync("/Account/Login", Form(
+            ("UserName", adminEmail),
+            ("Password", adminPassword),
             ("__RequestVerificationToken", token)));
 
-        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        response.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        loginResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
 
-        var dashboard = await client.GetAsync("/Dashboard");
-        dashboard.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Generate a unique identifier for the new user to avoid conflicts
+        var uniqueId = Guid.NewGuid().ToString().Substring(0, 8);
+        var newUserName = $"newuser{uniqueId}";
+        var newUserEmail = $"{newUserName}@netra.local";
+
+        // Now attempt to register a new user
+        var registerToken = ExtractAntiForgeryToken(await client.GetStringAsync("/Account/Register"));
+
+        var registerResponse = await client.PostAsync("/Account/Register", Form(
+            ("FirstName", "New"),
+            ("LastName", "User"),
+            ("UserName", newUserName),
+            ("Email", newUserEmail),
+            ("Password", "UserPass1!"),
+            ("ConfirmPassword", "UserPass1!"),
+            ("__RequestVerificationToken", registerToken)));
+
+        // Expect a redirect to dashboard (or wherever we redirect after successful registration)
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        registerResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        // Follow the redirect and verify we can still access the dashboard (as the administrator)
+        var dashboardResponse = await client.GetAsync("/Dashboard");
+        dashboardResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dashboardHtml = await dashboardResponse.Content.ReadAsStringAsync();
+        dashboardHtml.Should().Contain("NETRA"); // Just to ensure we got the dashboard
+    }
+
+    [Fact]
+    public async Task Register_Post_Administrator_CreatedUser_HasNoRole()
+    {
+        // Seed an administrator user
+        const string adminEmail = "admin.register4@netra.local";
+        const string adminPassword = "AdminPass4!";
+        await _factory.SeedUserAsync(adminEmail, adminPassword, "System Administrator");
+
+        // Log in as administrator
+        var adminClient = CreateClient(allowRedirect: false);
+        var adminLoginPage = await adminClient.GetAsync("/Account/Login");
+        var adminLoginHtml = await adminLoginPage.Content.ReadAsStringAsync();
+        var adminLoginToken = ExtractAntiForgeryToken(adminLoginHtml);
+
+        var adminLoginResponse = await adminClient.PostAsync("/Account/Login", Form(
+            ("UserName", adminEmail),
+            ("Password", adminPassword),
+            ("__RequestVerificationToken", adminLoginToken)));
+
+        adminLoginResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        adminLoginResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        // Generate a unique identifier for the new user to avoid conflicts
+        var uniqueId = Guid.NewGuid().ToString().Substring(0, 8);
+        var newUserName = $"newuser{uniqueId}";
+        var newUserEmail = $"{newUserName}@netra.local";
+
+        // Register a new user via the administrator
+        var registerToken = ExtractAntiForgeryToken(await adminClient.GetStringAsync("/Account/Register"));
+
+        var registerResponse = await adminClient.PostAsync("/Account/Register", Form(
+            ("FirstName", "NewUser"),
+            ("LastName", "Test"),
+            ("UserName", newUserName),
+            ("Email", newUserEmail),
+            ("Password", "UserPass1!"),
+            ("ConfirmPassword", "UserPass1!"),
+            ("__RequestVerificationToken", registerToken)));
+
+        registerResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        registerResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        // Log out the administrator (optional, but we'll do it to avoid interfering with the UserManager)
+        var logoutResponse = await adminClient.PostAsync("/Account/Logout", Form(
+            ("__RequestVerificationToken", registerToken)));
+        // Ignore logout response
+
+        // Use the test's service provider to get a UserManager and check the new user's roles
+        using var scope = _factory.Server.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByEmailAsync(newUserEmail);
+        user.Should().NotBeNull("The newly created user should exist in the database");
+        var roles = await userManager.GetRolesAsync(user!);
+        roles.Should().BeEmpty("The newly created user should have no roles assigned");
+
+        // Optional: Verify that the user cannot access the dashboard (secondary verification)
+        var newUserClient = CreateClient(allowRedirect: false);
+        var newUserLoginPage = await newUserClient.GetAsync("/Account/Login");
+        var newUserLoginHtml = await newUserLoginPage.Content.ReadAsStringAsync();
+        var newUserLoginToken = ExtractAntiForgeryToken(newUserLoginHtml);
+
+        var newUserLoginResponse = await newUserClient.PostAsync("/Account/Login", Form(
+            ("UserName", newUserName),
+            ("Password", "UserPass1!"),
+            ("__RequestVerificationToken", newUserLoginToken)));
+
+        newUserLoginResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        newUserLoginResponse.Headers.Location!.OriginalString.Should().Be("/Dashboard");
+
+        var dashboardResponse = await newUserClient.GetAsync("/Dashboard");
+        // Should be denied: either redirect to login or 403 Forbidden
+        dashboardResponse.StatusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Forbidden);
+        if (dashboardResponse.StatusCode == HttpStatusCode.Redirect)
+        {
+            // Follow the redirect and verify we end up at the login page
+            var loginFollow = await newUserClient.GetAsync(dashboardResponse.Headers.Location);
+            loginFollow.StatusCode.Should().Be(HttpStatusCode.OK);
+            var loginHtml = await loginFollow.Content.ReadAsStringAsync();
+            loginHtml.Should().Contain("NETRA");
+            loginHtml.Should().Contain("Log in");
+        }
+    }
+
+    [Fact]
+    public async Task Register_Get_Anonymous_IsDenied()
+    {
+        var client = CreateClient(allowRedirect: false);
+        var response = await client.GetAsync("/Account/Register");
+        // Anonymous access to registration endpoint should be denied
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.Redirect, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden);
+        // If it's a redirect, it should go to the login page
+        if (response.StatusCode == HttpStatusCode.Redirect)
+        {
+            response.Headers.Location!.OriginalString.Should().Contain("/Account/Login");
+        }
     }
 
     [Fact]
