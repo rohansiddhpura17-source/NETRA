@@ -13,9 +13,18 @@ public sealed class SvgDonutChartRenderer : IChartRenderer
 
     public HtmlString Render(SvgChartModel model)
     {
-        var values = model.Series.FirstOrDefault()?.Values ?? Array.Empty<decimal>();
+        var sourceValues = model.Series.FirstOrDefault()?.Values ?? Array.Empty<decimal>();
+        var pairCount = Math.Min(sourceValues.Count, model.Categories.Count);
+        if (pairCount == 0)
+        {
+            return HtmlString.Empty;
+        }
+
+        var values = sourceValues.Take(pairCount).ToArray();
+        var categories = model.Categories.Take(pairCount).ToArray();
         var total = values.Sum();
-        if (values.Count == 0 || total <= 0)
+
+        if (total <= 0)
         {
             return HtmlString.Empty;
         }
@@ -30,23 +39,23 @@ public sealed class SvgDonutChartRenderer : IChartRenderer
                     $"<desc id=\"{id}-desc\">{E(model.Description)}</desc>" +
                     "<circle class=\"netra-chart__donut-track\" cx=\"130\" cy=\"126\" r=\"72\"/>");
 
-        for (var i = 0; i < values.Count; i++)
+        for (var i = 0; i < values.Length; i++)
         {
             var segment = circumference * values[i] / total;
             html.Append($"<circle class=\"netra-chart__donut-segment netra-chart__series-{i % 6}\" cx=\"130\" cy=\"126\" r=\"72\" " +
                         $"stroke-dasharray=\"{F(segment)} {F(circumference - segment)}\" stroke-dashoffset=\"-{F(offset)}\">" +
-                        $"<title>{E(model.Categories[i])}: {F(values[i])}</title></circle>");
+                        $"<title>{E(categories[i])}: {F(values[i])}</title></circle>");
             offset += segment;
         }
 
         html.Append($"<text class=\"netra-chart__donut-value\" x=\"130\" y=\"122\" text-anchor=\"middle\">{F(total)}</text>" +
                     "<text class=\"netra-chart__donut-label\" x=\"130\" y=\"143\" text-anchor=\"middle\">TOTAL</text>");
 
-        for (var i = 0; i < model.Categories.Count; i++)
+        for (var i = 0; i < categories.Length; i++)
         {
             var y = 48 + i * 30;
             html.Append($"<rect class=\"netra-chart__legend-swatch netra-chart__series-{i % 6}\" x=\"264\" y=\"{y - 9}\" width=\"9\" height=\"9\" rx=\"2\"/>" +
-                        $"<text class=\"netra-chart__legend-label\" x=\"282\" y=\"{y}\">{E(model.Categories[i])}</text>" +
+                        $"<text class=\"netra-chart__legend-label\" x=\"282\" y=\"{y}\">{E(categories[i])}</text>" +
                         $"<text class=\"netra-chart__legend-value\" x=\"500\" y=\"{y}\" text-anchor=\"end\">{F(values[i])}</text>");
         }
 

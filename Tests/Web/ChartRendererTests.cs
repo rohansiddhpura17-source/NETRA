@@ -86,6 +86,44 @@ public class ChartRendererTests
         svg.Should().BeEmpty();
     }
 
+    [Fact]
+    public void LineChart_WhenValuesOutnumberCategories_UsesMatchingPairs()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "t",
+            Description = "d",
+            Categories = ["Jan", "Feb"],
+            Series = [new SvgChartSeries { Name = "Cases", Values = [1m, 4m, 2m] }]
+        };
+
+        var svg = new SvgLineChartRenderer().Render(model).ToString();
+
+        svg.Should().Contain(">Jan</text>");
+        svg.Should().Contain(">Feb</text>");
+        svg.Should().NotContain(">Mar</text>");
+        (svg.Split("<circle class=\"netra-chart__point\"", StringSplitOptions.None).Length - 1)
+            .Should().Be(2);
+    }
+
+    [Fact]
+    public void LineChart_WhenCategoriesOutnumberValues_UsesMatchingPairs()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "t",
+            Description = "d",
+            Categories = ["Jan", "Feb", "Mar"],
+            Series = [new SvgChartSeries { Name = "Cases", Values = [2m] }]
+        };
+
+        var svg = new SvgLineChartRenderer().Render(model).ToString();
+
+        svg.Should().Contain(">Jan</text>");
+        svg.Should().NotContain(">Feb</text>");
+        svg.Should().NotContain(">Mar</text>");
+    }
+
     // ------------------------------------------------------------- donut
 
     [Fact]
@@ -114,6 +152,67 @@ public class ChartRendererTests
         };
 
         new SvgDonutChartRenderer().Render(model).ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DonutChart_WhenValuesOutnumberCategories_UsesMatchingPairsAndTotal()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "t",
+            Description = "d",
+            Categories = ["Jan", "Feb"],
+            Series = [new SvgChartSeries { Name = "Cases", Values = [1m, 4m, 100m] }]
+        };
+
+        var svg = new SvgDonutChartRenderer().Render(model).ToString();
+
+        svg.Should().Contain(">5</text>");
+        svg.Should().Contain("Jan");
+        svg.Should().Contain("Feb");
+        svg.Should().NotContain("100");
+    }
+
+    [Fact]
+    public void DonutChart_WhenCategoriesOutnumberValues_UsesMatchingPairsAndTotal()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "t",
+            Description = "d",
+            Categories = ["Jan", "Feb", "Mar"],
+            Series = [new SvgChartSeries { Name = "Cases", Values = [2m, 3m] }]
+        };
+
+        var svg = new SvgDonutChartRenderer().Render(model).ToString();
+
+        svg.Should().Contain(">5</text>");
+        svg.Should().Contain("Jan");
+        svg.Should().Contain("Feb");
+        svg.Should().NotContain("Mar");
+    }
+
+    [Fact]
+    public void DonutChart_EscapesHostileTitlesDescriptionsCategoriesAndSeriesNames()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "<script>alert(1)</script>",
+            Description = "<img src=x onerror=\"alert(2)\">",
+            Categories = ["<script>category</script>"],
+            Series = [new SvgChartSeries
+            {
+                Name = "<script>series</script>",
+                Values = [1m]
+            }]
+        };
+
+        var svg = new SvgDonutChartRenderer().Render(model).ToString();
+
+        svg.Should().NotContain("<script>");
+        svg.Should().NotContain("<img");
+        svg.Should().Contain("&lt;script&gt;");
+        svg.Should().Contain("&lt;img");
     }
 
     // ------------------------------------------------------------- bar

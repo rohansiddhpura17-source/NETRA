@@ -13,18 +13,22 @@ public sealed class SvgLineChartRenderer : IChartRenderer
 
     public HtmlString Render(SvgChartModel model)
     {
-        var values = model.Series.FirstOrDefault()?.Values ?? Array.Empty<decimal>();
-        if (values.Count == 0 || model.Categories.Count == 0)
+        var sourceValues = model.Series.FirstOrDefault()?.Values ?? Array.Empty<decimal>();
+        var pairCount = Math.Min(sourceValues.Count, model.Categories.Count);
+        if (pairCount == 0)
         {
             return HtmlString.Empty;
         }
+
+        var values = sourceValues.Take(pairCount).ToArray();
+        var categories = model.Categories.Take(pairCount).ToArray();
 
         const decimal left = 46;
         const decimal top = 18;
         const decimal width = 656;
         const decimal height = 168;
         var max = Math.Max(1, values.Max());
-        var denominator = Math.Max(1, values.Count - 1);
+        var denominator = Math.Max(1, values.Length - 1);
         var points = values.Select((value, index) => new
         {
             X = left + width * index / denominator,
@@ -54,8 +58,8 @@ public sealed class SvgLineChartRenderer : IChartRenderer
         for (var i = 0; i < points.Count; i++)
         {
             html.Append($"<circle class=\"netra-chart__point\" cx=\"{F(points[i].X)}\" cy=\"{F(points[i].Y)}\" r=\"3.5\">" +
-                        $"<title>{E(model.Categories[i])}: {F(values[i])}</title></circle>" +
-                        $"<text class=\"netra-chart__axis-label\" x=\"{F(points[i].X)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(model.Categories[i])}</text>");
+                        $"<title>{E(categories[i])}: {F(values[i])}</title></circle>" +
+                        $"<text class=\"netra-chart__axis-label\" x=\"{F(points[i].X)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(categories[i])}</text>");
         }
 
         html.Append("</svg>");
