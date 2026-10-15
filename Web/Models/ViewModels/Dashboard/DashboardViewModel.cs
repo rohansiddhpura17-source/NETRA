@@ -20,11 +20,12 @@ public sealed class DashboardViewModel
     public SvgChartModel? DistrictChart { get; init; }
     public IReadOnlyList<HighRiskAreaItem> HighRiskAreas { get; init; } = Array.Empty<HighRiskAreaItem>();
     public IReadOnlyList<RecentAlertItem> RecentAlerts { get; init; } = Array.Empty<RecentAlertItem>();
+    public PublicCrimeStatsViewModel? PublicStats { get; init; }
 
     public string PeriodLabel =>
         $"{Data.TrendFrom:MMM yyyy} – {Data.TrendTo:MMM yyyy} (last 12 months)";
 
-    public static DashboardViewModel Create(DashboardDto dto)
+    public static DashboardViewModel Create(DashboardDto dto, PublicCrimeStatsDto? publicStats = null)
     {
         var trend = dto.CrimeTrend;
         var distribution = TopCategories(dto.CrimeDistribution, 6);
@@ -33,6 +34,7 @@ public sealed class DashboardViewModel
         return new DashboardViewModel
         {
             Data = dto,
+            PublicStats = publicStats is not null ? PublicCrimeStatsViewModel.Create(publicStats) : null,
             StatCards =
             [
                 new StatCardModel

@@ -56,6 +56,8 @@ public sealed class CaseListItemDto
 
     public DateTime IncidentDate { get; init; }
 
+    public DateTime? LastUpdatedDate { get; init; }
+
     public string? DistrictName { get; init; }
 
     public string Status { get; init; } = string.Empty;

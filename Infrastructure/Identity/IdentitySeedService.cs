@@ -21,6 +21,7 @@ public class IdentitySeedService
     private readonly IConfiguration _configuration;
     private readonly IHostEnvironment _environment;
     private readonly DemoCaseDataSeeder _demoCases;
+    private readonly SyntheticDemoDataSeeder? _syntheticSeeder;
 
     public IdentitySeedService(
         ILogger<IdentitySeedService> logger,
@@ -29,7 +30,8 @@ public class IdentitySeedService
         NETRA.Infrastructure.Data.NetraDbContext context,
         IConfiguration configuration,
         IHostEnvironment environment,
-        DemoCaseDataSeeder demoCases)
+        DemoCaseDataSeeder demoCases,
+        SyntheticDemoDataSeeder? syntheticSeeder = null)
     {
         _logger = logger;
         _roleManager = roleManager;
@@ -38,6 +40,7 @@ public class IdentitySeedService
         _configuration = configuration;
         _environment = environment;
         _demoCases = demoCases;
+        _syntheticSeeder = syntheticSeeder;
     }
 
     public async Task SeedAsync()
@@ -50,6 +53,11 @@ public class IdentitySeedService
 
             await SeedDemoDataAsync();
             await SeedDemoCasesAsync(password);
+
+            if (_syntheticSeeder is not null && _syntheticSeeder.IsEnabled())
+            {
+                await _syntheticSeeder.SeedAsync();
+            }
         }
         else
         {

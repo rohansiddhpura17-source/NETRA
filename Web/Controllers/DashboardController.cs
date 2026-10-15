@@ -10,16 +10,21 @@ namespace NETRA.Web.Controllers;
 public class DashboardController : Controller
 {
     private readonly IDashboardService _dashboard;
+    private readonly IPublicCrimeStatsService _publicStats;
 
-    public DashboardController(IDashboardService dashboard)
+    public DashboardController(
+        IDashboardService dashboard,
+        IPublicCrimeStatsService publicStats)
     {
         _dashboard = dashboard;
+        _publicStats = publicStats;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var dto = await _dashboard.GetDashboardAsync(cancellationToken);
-        return View(DashboardViewModel.Create(dto));
+        var publicStats = await _publicStats.GetGujaratCybercrimeStatsAsync(cancellationToken);
+        return View(DashboardViewModel.Create(dto, publicStats));
     }
 }

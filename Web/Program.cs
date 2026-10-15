@@ -131,6 +131,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 builder.Services.AddScoped<IdentitySeedService>();
 builder.Services.AddScoped<DemoCaseDataSeeder>();
+builder.Services.AddScoped<SyntheticDemoDataSeeder>();
 builder.Services.AddScoped<INetraUserContext, NetraUserContext>();
 
 builder.Services.AddHttpContextAccessor();
@@ -140,6 +141,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ICaseService, CaseService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IPublicCrimeStatsService, PublicCrimeStatsService>();
 builder.Services.AddSingleton<IAnomalyDetector, AnomalyDetector>();
 builder.Services.AddScoped<IRiskAnalysisService, RiskAnalysisService>();
 builder.Services.AddScoped<IMapService, MapService>();

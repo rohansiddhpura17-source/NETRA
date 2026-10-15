@@ -101,6 +101,7 @@ public sealed class CaseListItemViewModel
         Title = dto.Title;
         CrimeTypeName = dto.CrimeTypeName;
         IncidentDate = dto.IncidentDate;
+        LastUpdatedDate = dto.LastUpdatedDate;
         DistrictName = dto.DistrictName ?? "—";
         Status = dto.Status;
         Severity = dto.Severity;
@@ -114,12 +115,17 @@ public sealed class CaseListItemViewModel
     public string Title { get; }
     public string CrimeTypeName { get; }
     public DateTime IncidentDate { get; }
+    public DateTime? LastUpdatedDate { get; }
     public string DistrictName { get; }
     public string Status { get; }
     public string Severity { get; }
     public string InvestigatorName { get; }
     public int PersonCount { get; }
     public int EvidenceCount { get; }
+
+    public bool IsSyntheticDemo =>
+        Title.Contains("[DEMO", StringComparison.OrdinalIgnoreCase) ||
+        CaseNumber.StartsWith("CC-2026-00", StringComparison.OrdinalIgnoreCase);
 
     public NetraTone StatusTone => Status switch
     {

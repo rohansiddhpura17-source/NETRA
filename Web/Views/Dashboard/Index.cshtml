@@ -232,3 +232,158 @@
         </div>
     </div>
 </div>
+
+@if (Model.PublicStats is { } stats)
+{
+    <section class="netra-section netra-mt-4" aria-labelledby="public-crime-intelligence-heading">
+        <div class="netra-card">
+            <div class="netra-card__header">
+                <div>
+                    <h2 class="netra-card__title" id="public-crime-intelligence-heading">
+                        <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Analytics))</span>
+                        Public Crime Intelligence — @stats.Title
+                    </h2>
+                    <p class="netra-muted" style="margin: 4px 0 0 0; font-size: 12px;">
+                        @stats.Report &bull; @stats.Geography &bull; Source: <a href="@stats.SourceUrl" target="_blank" rel="noopener noreferrer" style="color: var(--netra-primary);">@stats.Source</a>
+                    </p>
+                </div>
+                <div class="netra-row" style="gap: 8px;">
+                    <span class="netra-badge netra-badge--info">@stats.DataType</span>
+                    <span class="netra-badge netra-badge--neutral">Period: @stats.ReportingPeriod</span>
+                </div>
+            </div>
+            <div class="netra-card__body">
+                <div class="netra-alert netra-alert--info" style="margin-bottom: var(--netra-space-4, 1rem);">
+                    <span><strong>Historical Aggregate Statistics:</strong> These verified figures are published by the National Crime Records Bureau (NCRB) and Times of India (Oct 2025). They represent aggregate state/city baseline benchmarks and are decoupled from active operational FIR dockets and field incident registries.</span>
+                </div>
+
+                <div class="netra-grid netra-grid--stats">
+                    @foreach (var card in stats.StatCards)
+                    {
+                        @await Html.PartialAsync("_StatCard", card)
+                    }
+                </div>
+
+                <div class="netra-grid netra-grid--2 netra-mt-4">
+                    <div class="netra-card" style="background: rgba(10, 16, 26, 0.6); border: 1px solid var(--netra-border);">
+                        <div class="netra-card__header">
+                            <h3 class="netra-card__title" style="font-size: 13px;">
+                                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Cases))</span>
+                                Gujarat State Cybercrime Totals (2022 vs 2023)
+                            </h3>
+                            <span class="netra-badge netra-badge--warning">+40.8% YoY</span>
+                        </div>
+                        <div class="netra-card__body">
+                            @if (stats.AnnualTotalsChart is { } annualTotals)
+                            {
+                                @Charts.Render(ChartKind.Bar, annualTotals)
+                            }
+                        </div>
+                    </div>
+
+                    <div class="netra-card" style="background: rgba(10, 16, 26, 0.6); border: 1px solid var(--netra-border);">
+                        <div class="netra-card__header">
+                            <h3 class="netra-card__title" style="font-size: 13px;">
+                                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Shield))</span>
+                                Cyber Cheating &amp; Online Fraud Growth
+                            </h3>
+                            <span class="netra-badge netra-badge--danger">+79.8% YoY</span>
+                        </div>
+                        <div class="netra-card__body">
+                            @if (stats.CheatingComparisonChart is { } cheatingChart)
+                            {
+                                @Charts.Render(ChartKind.Bar, cheatingChart)
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="netra-grid netra-grid--2 netra-mt-4">
+                    <div class="netra-card" style="background: rgba(10, 16, 26, 0.6); border: 1px solid var(--netra-border);">
+                        <div class="netra-card__header">
+                            <h3 class="netra-card__title" style="font-size: 13px;">
+                                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Map))</span>
+                                City Comparison: Ahmedabad vs Surat (2021 vs 2023)
+                            </h3>
+                            <span class="netra-badge netra-badge--neutral">Metropolitan Centers</span>
+                        </div>
+                        <div class="netra-card__body">
+                            @if (stats.CityComparisonChart is { } cityChart)
+                            {
+                                @Charts.Render(ChartKind.Bar, cityChart)
+                            }
+                            <p class="netra-muted" style="font-size: 11.5px; margin-top: 8px;">
+                                Ahmedabad cases decreased from 447 (2021) to 246 (2023), while Surat cases increased from 296 (2021) to 397 (2023).
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="netra-card" style="background: rgba(10, 16, 26, 0.6); border: 1px solid var(--netra-border);">
+                        <div class="netra-card__header">
+                            <h3 class="netra-card__title" style="font-size: 13px;">
+                                <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Alert))</span>
+                                Reported Cybercrime Motives (2023)
+                            </h3>
+                            <span class="netra-badge netra-badge--info">NCRB Breakdown</span>
+                        </div>
+                        <div class="netra-card__body">
+                            @if (stats.MotiveBreakdownChart is { } motiveChart)
+                            {
+                                @Charts.Render(ChartKind.Donut, motiveChart)
+                            }
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-top: 12px; font-size: 12px;">
+                                <div style="padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                                    <div class="netra-muted">Fraud</div>
+                                    <div style="font-weight: 600; color: var(--netra-text-strong);">1,187 (67.6%)</div>
+                                </div>
+                                <div style="padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                                    <div class="netra-muted">Disrepute</div>
+                                    <div style="font-weight: 600; color: var(--netra-text-strong);">387 (22.0%)</div>
+                                </div>
+                                <div style="padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+                                    <div class="netra-muted">Extortion</div>
+                                    <div style="font-weight: 600; color: var(--netra-text-strong);">183 (10.4%)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="netra-card netra-mt-4" style="background: rgba(10, 16, 26, 0.6); border: 1px solid var(--netra-border);">
+                    <div class="netra-card__header">
+                        <h3 class="netra-card__title" style="font-size: 13px;">
+                            <span class="netra-card__title-icon">@Html.Raw(NetraIconPaths.Render(NetraIcon.Analytics))</span>
+                            Charge-Sheeting Rate Comparison (Judicial Progress Rate)
+                        </h3>
+                        <span class="netra-badge netra-badge--success">+18.2% Above National Average</span>
+                    </div>
+                    <div class="netra-card__body">
+                        <div class="netra-row netra-row--between" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span><strong>Gujarat Police Clearance:</strong> @stats.GujaratChargeSheetingRate%</span>
+                            <span class="netra-muted">National Benchmark: @stats.NationalChargeSheetingRate%</span>
+                        </div>
+                        <div style="height: 14px; background: rgba(255,255,255,0.06); border-radius: 7px; overflow: hidden; position: relative;">
+                            <div style="width: @stats.GujaratChargeSheetingRate%; height: 100%; background: linear-gradient(90deg, #00c0f0, #00e5a3); border-radius: 7px;"></div>
+                            <div style="position: absolute; left: @stats.NationalChargeSheetingRate%; top: 0; bottom: 0; width: 2px; background: #ffaa00;" title="National Average: @stats.NationalChargeSheetingRate%"></div>
+                        </div>
+                        <div class="netra-row netra-row--between" style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: var(--netra-text-muted);">
+                            <span>0%</span>
+                            <span>National Average: @stats.NationalChargeSheetingRate%</span>
+                            <span>Gujarat: @stats.GujaratChargeSheetingRate%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="netra-mt-4" style="padding-top: 12px; border-top: 1px solid var(--netra-border); font-size: 11.5px; color: var(--netra-text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <strong>Official Citation:</strong> @stats.Report, National Crime Records Bureau (NCRB), Ministry of Home Affairs, Government of India.
+                    </div>
+                    <div>
+                        Source: <a href="@stats.SourceUrl" target="_blank" rel="noopener noreferrer" style="color: var(--netra-primary);">@stats.Source</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}

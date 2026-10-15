@@ -289,4 +289,30 @@ public class ShellRenderingTests : IClassFixture<NetraWebFactory>
         css.Should().Contain("--netra-danger");
         css.Should().Contain("--netra-info");
     }
+
+    [Fact]
+    public async Task Shell_RendersAccessibleSkipLinkTargetingMainContent()
+    {
+        var (client, _) = await SignInAsync(
+            "skip.admin@netra.local", "ValidPassw0rd!", "System Administrator");
+
+        var html = await client.GetStringAsync("/Dashboard");
+
+        html.Should().Contain("<a class=\"netra-skip-link\" href=\"#main-content\">Skip to main content</a>");
+        html.Should().Contain("id=\"main-content\"");
+    }
+
+    [Fact]
+    public async Task Stylesheet_DefinesVisuallyHiddenAndFocusStatesForSkipLink()
+    {
+        var client = _factory.CreateClient();
+
+        var css = await client.GetStringAsync("/css/netra.css");
+
+        css.Should().Contain(".netra-skip-link {");
+        css.Should().Contain("clip-path: inset(50%)");
+        css.Should().Contain(".netra-skip-link:focus");
+        css.Should().Contain(".netra-skip-link:focus-visible");
+        css.Should().Contain("#main-content:focus");
+    }
 }

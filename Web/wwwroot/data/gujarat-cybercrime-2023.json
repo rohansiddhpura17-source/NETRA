@@ -1,0 +1,32 @@
+{
+  "title": "Gujarat Cybercrime Statistics",
+  "report": "NCRB Crime in India 2023",
+  "geography": "Gujarat, India",
+  "source": "Times of India, October 6, 2025",
+  "sourceUrl": "https://timesofindia.indiatimes.com/city/ahmedabad/cybercrimes-rose-41-in-guj-ncrb/articleshow/124324670.cms",
+  "dataType": "Historical aggregate statistics",
+  "years": [2021, 2022, 2023],
+  "annualCases": [
+    { "year": 2021, "city": "Ahmedabad", "cases": 447 },
+    { "year": 2023, "city": "Ahmedabad", "cases": 246 },
+    { "year": 2021, "city": "Surat", "cases": 296 },
+    { "year": 2023, "city": "Surat", "cases": 397 }
+  ],
+  "gujaratTotals": [
+    { "year": 2022, "cases": 1417 },
+    { "year": 2023, "cases": 1995 }
+  ],
+  "cheatingCases": [
+    { "year": 2022, "cases": 575 },
+    { "year": 2023, "cases": 1034 }
+  ],
+  "reportedMotives2023": [
+    { "category": "Fraud", "cases": 1187 },
+    { "category": "Causing disrepute", "cases": 387 },
+    { "category": "Extortion", "cases": 183 }
+  ],
+  "chargeSheetingRatePercent": {
+    "gujarat": 52.1,
+    "national": 33.9
+  }
+}

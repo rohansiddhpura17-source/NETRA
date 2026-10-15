@@ -66,6 +66,7 @@ public sealed class CaseService : ICaseService
                 Title = c.Title,
                 CrimeTypeName = c.CrimeType.Name,
                 IncidentDate = c.IncidentDate,
+                LastUpdatedDate = c.UpdatedAt,
                 DistrictName = c.CaseLocations
                     .Where(cl => cl.LocationRole == IncidentLocationRole)
                     .Select(cl => cl.Location!.District!.Name)

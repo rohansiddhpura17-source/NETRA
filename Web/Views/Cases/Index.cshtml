@@ -36,7 +36,7 @@
     Title = "Crime Cases",
     Subtitle = $"{Model.TotalCount} case{(Model.TotalCount == 1 ? "" : "s")} on record.",
     Actions = (HtmlString)Html.Raw(
-        $"<a class=\"netra-btn netra-btn--primary netra-btn--sm\" asp-controller=\"Cases\" asp-action=\"Create\">" +
+        $"<a class=\"netra-btn netra-btn--primary netra-btn--sm\" href=\"/Cases/Create\">" +
         $"<span>{NetraIconPaths.Render(NetraIcon.Plus)}</span>Register new case</a>")
 })
 
@@ -151,6 +151,7 @@
             new() { Title = "Case number", Key = "CaseNumber" },
             new() { Title = "Crime type", Key = "CrimeTypeName" },
             new() { Title = "Incident date", Key = "IncidentDate" },
+            new() { Title = "Last updated", Key = "LastUpdatedDate" },
             new() { Title = "District", Key = "DistrictName" },
             new() { Title = "Severity", Key = "Severity" },
             new() { Title = "Status", Key = "Status" },
@@ -174,10 +175,18 @@
                 ShowDot = false
             });
 
+            var demoBadge = item.IsSyntheticDemo
+                ? " <span class=\"netra-badge netra-badge--warning\" style=\"font-size:0.6875rem;padding:2px 6px;\">DEMO</span>"
+                : "";
+
             var caseNumber = (HtmlString)Html.Raw(
-                $"<a class=\"netra-table__primary\" asp-controller=\"Cases\" asp-action=\"Details\" " +
-                $"asp-route-id=\"{item.Id}\">{HtmlEncoder.Default.Encode(item.CaseNumber)}</a>" +
-                $"<span class=\"netra-cellsub\">{HtmlEncoder.Default.Encode(item.Title)}</span>");
+                $"<div>" +
+                $"<div style=\"display:flex;align-items:center;gap:6px;\">" +
+                $"<a class=\"netra-table__primary\" href=\"/Cases/Details/{item.Id}\">{HtmlEncoder.Default.Encode(item.CaseNumber)}</a>" +
+                $"{demoBadge}" +
+                $"</div>" +
+                $"<span class=\"netra-cellsub\">{HtmlEncoder.Default.Encode(item.Title)}</span>" +
+                $"</div>");
 
             var investigator = item.InvestigatorName == "Unassigned"
                 ? (HtmlString)Html.Raw("<span class=\"netra-muted\">Unassigned</span>")
@@ -187,8 +196,7 @@
                     $"<span>{HtmlEncoder.Default.Encode(item.InvestigatorName)}</span></span>");
 
             var editLink = (HtmlString)Html.Raw(
-                $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" asp-controller=\"Cases\" " +
-                $"asp-action=\"Edit\" asp-route-id=\"{item.Id}\">Edit</a>");
+                $"<a class=\"netra-btn netra-btn--outline netra-btn--sm\" href=\"/Cases/Edit/{item.Id}\">Edit</a>");
 
             rows.Add(new TableRowModel
             {
@@ -197,6 +205,7 @@
                     ["CaseNumber"] = caseNumber,
                     ["CrimeTypeName"] = item.CrimeTypeName,
                     ["IncidentDate"] = item.IncidentDate.ToString("dd MMM yyyy"),
+                    ["LastUpdatedDate"] = item.LastUpdatedDate?.ToString("dd MMM yyyy") ?? "—",
                     ["DistrictName"] = item.DistrictName,
                     ["Severity"] = severityBadge,
                     ["Status"] = statusBadge,
