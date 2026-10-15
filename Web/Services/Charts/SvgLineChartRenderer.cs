@@ -13,7 +13,8 @@ public sealed class SvgLineChartRenderer : IChartRenderer
 
     public HtmlString Render(SvgChartModel model)
     {
-        var sourceValues = model.Series.FirstOrDefault()?.Values ?? Array.Empty<decimal>();
+        var firstSeries = model.Series.FirstOrDefault();
+        var sourceValues = firstSeries?.Values ?? Array.Empty<decimal>();
         var pairCount = Math.Min(sourceValues.Count, model.Categories.Count);
         if (pairCount == 0)
         {
@@ -22,6 +23,9 @@ public sealed class SvgLineChartRenderer : IChartRenderer
 
         var values = sourceValues.Take(pairCount).ToArray();
         var categories = model.Categories.Take(pairCount).ToArray();
+        var seriesName = !string.IsNullOrWhiteSpace(firstSeries?.Name)
+            ? firstSeries.Name
+            : "Cases";
 
         const decimal left = 46;
         const decimal top = 18;
@@ -57,31 +61,39 @@ public sealed class SvgLineChartRenderer : IChartRenderer
 
         for (var i = 0; i < points.Count; i++)
         {
-            var px = points[i].X;
-            var py = points[i].Y;
-            var seriesName = model.Series.FirstOrDefault()?.Name ?? string.Empty;
-            var pointId = $"{id}-point-{i}";
-            var tooltipId = $"{pointId}-tooltip";
+            var point = points[i];
+            var category = categories[i];
+            var val = values[i];
 
-            // clamp tooltip position within viewBox (0..720, 0..230)
-            var tx = Math.Max(6, Math.Min(714, px));
-            var ty = Math.Max(6, Math.Min(224, py - 14));
+            const decimal tw = 140;
+            const decimal th = 46;
+            var tx = point.X - tw / 2m;
+            if (tx < 10m) tx = 10m;
+            if (tx + tw > 710m) tx = 710m - tw;
 
-            html.Append($"<g class=\"netra-chart__point-wrap\">"
-                        // visible point (keeps original title for basic UA tooltips)
-                        + $"<circle class=\"netra-chart__point\" cx=\"{F(px)}\" cy=\"{F(py)}\" r=\"3.5\" aria-hidden=\"true\"/>"
-                        // larger invisible hit target for hover and keyboard focus
-                        + $"<circle class=\"netra-chart__hit\" cx=\"{F(px)}\" cy=\"{F(py)}\" r=\"10\" tabindex=\"0\" aria-describedby=\"{tooltipId}\"/>"
-                        // server-rendered tooltip group (hidden by default; shown on hover/focus via CSS)
-                        + $"<g id=\"{tooltipId}\" class=\"netra-chart__tooltip netra-chart__series-0\" transform=\"translate({F(tx)},{F(ty)})\" role=\"group\">"
-                        + $"<rect x=\"8\" y=\"-22\" width=\"140\" height=\"44\" rx=\"6\" class=\"netra-tooltip__panel\"/>"
-                        + $"<rect x=\"10\" y=\"-20\" width=\"6\" height=\"40\" rx=\"2\" class=\"netra-tooltip__accent netra-chart__series-0\"/>"
-                        + $"<text class=\"netra-tooltip__title\" x=\"24\" y=\"-6\">{E(categories[i])}</text>"
-                        + $"<text class=\"netra-tooltip__line\" x=\"24\" y=\"10\">{E(seriesName)}: {F(values[i])}</text>"
-                        + "</g>"
-                        // keep axis label
-                        + $"<text class=\"netra-chart__axis-label\" x=\"{F(px)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(categories[i])}</text>"
-                        + "</g>");
+            var ty = point.Y - th - 12m;
+            if (ty < 8m)
+            {
+                ty = point.Y + 14m;
+            }
+            if (ty + th > 222m)
+            {
+                ty = 222m - th;
+            }
+
+            html.Append($"<g class=\"netra-chart__interactive netra-chart__interactive--point\" tabindex=\"0\" role=\"graphics-symbol\" aria-label=\"{E(category)}, {E(seriesName)}: {F(val)}\">" +
+                        $"<circle class=\"netra-chart__point-hit netra-chart__hit\" cx=\"{F(point.X)}\" cy=\"{F(point.Y)}\" r=\"16\"/>" +
+                        $"<circle class=\"netra-chart__point\" cx=\"{F(point.X)}\" cy=\"{F(point.Y)}\" r=\"3.5\">" +
+                        $"<title>{E(category)}: {F(val)}</title></circle>" +
+                        $"<g class=\"netra-chart__tooltip netra-chart__series-0\" aria-hidden=\"true\" pointer-events=\"none\">" +
+                        $"<rect class=\"netra-chart__tooltip-bg netra-tooltip__panel\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"{F(tw)}\" height=\"{F(th)}\" rx=\"4\"/>" +
+                        $"<rect class=\"netra-chart__tooltip-accent netra-tooltip__accent netra-chart__series-0\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"3\" height=\"{F(th)}\" rx=\"1\"/>" +
+                        $"<text class=\"netra-chart__tooltip-title netra-tooltip__title\" x=\"{F(tx + 10)}\" y=\"{F(ty + 18)}\">{E(category)}</text>" +
+                        $"<text class=\"netra-chart__tooltip-text netra-tooltip__line\" x=\"{F(tx + 10)}\" y=\"{F(ty + 34)}\">" +
+                        $"<tspan class=\"netra-chart__tooltip-label\">{E(seriesName)}: </tspan>" +
+                        $"<tspan class=\"netra-chart__tooltip-value\">{F(val)}</tspan>" +
+                        "</text></g></g>" +
+                        $"<text class=\"netra-chart__axis-label\" x=\"{F(point.X)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(category)}</text>");
         }
 
         html.Append("</svg>");

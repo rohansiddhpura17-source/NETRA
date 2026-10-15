@@ -1820,6 +1820,195 @@ pre {
     font-variant-numeric: tabular-nums;
 }
 
+/* -----------------------------------------------------------------------------
+   Interactive Chart Hover & Keyboard-Focus Tooltips
+----------------------------------------------------------------------------- */
+
+.netra-chart__interactive {
+    outline: none;
+    cursor: pointer;
+}
+
+.netra-chart__interactive:focus-visible {
+    outline: none;
+}
+
+.netra-chart__point-hit,
+.netra-chart__bar-hit {
+    fill: transparent;
+    stroke: transparent;
+    pointer-events: all;
+}
+
+/* Hover & Focus Visual Feedback */
+.netra-chart__interactive--point:hover .netra-chart__point,
+.netra-chart__interactive--point:focus .netra-chart__point,
+.netra-chart__interactive--point:focus-visible .netra-chart__point {
+    r: 5.5px;
+    stroke: #ffffff;
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 6px var(--netra-primary, #00c0f0));
+}
+
+.netra-chart__interactive--donut:hover .netra-chart__donut-segment,
+.netra-chart__interactive--donut:focus .netra-chart__donut-segment,
+.netra-chart__interactive--donut:focus-visible .netra-chart__donut-segment {
+    stroke-width: 30px;
+    filter: drop-shadow(0 0 6px var(--netra-series, var(--netra-primary, #00c0f0)));
+}
+
+.netra-chart__interactive--bar:hover .netra-chart__bar,
+.netra-chart__interactive--bar:focus .netra-chart__bar,
+.netra-chart__interactive--bar:focus-visible .netra-chart__bar {
+    filter: brightness(1.25) drop-shadow(0 0 4px var(--netra-series, var(--netra-primary, #00c0f0)));
+}
+
+/* Tooltip Surface and Stacking */
+.netra-chart__tooltip {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.netra-chart__interactive:hover .netra-chart__tooltip,
+.netra-chart__interactive:focus .netra-chart__tooltip,
+.netra-chart__interactive:focus-visible .netra-chart__tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.netra-chart__tooltip-bg {
+    fill: #0b1322;
+    stroke: rgba(0, 192, 240, 0.28);
+    stroke-width: 1;
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.7));
+}
+
+.netra-chart__tooltip-accent {
+    fill: var(--netra-series, var(--netra-primary, #00c0f0));
+}
+
+.netra-chart__tooltip-title {
+    fill: #f1f5f9;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+}
+
+.netra-chart__tooltip-text {
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.netra-chart__tooltip-label {
+    fill: #94a3b8;
+    font-size: 10px;
+    font-weight: 400;
+}
+
+.netra-chart__tooltip-value {
+    fill: #38bdf8;
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+/* HTML Progress Bar Tooltip */
+.netra-progress-interactive {
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    border-radius: 7px;
+}
+
+.netra-progress-interactive:focus-visible {
+    outline: 2px solid var(--netra-primary);
+    outline-offset: 3px;
+}
+
+.netra-progress-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0b1322;
+    border: 1px solid rgba(0, 192, 240, 0.28);
+    border-radius: var(--netra-radius, 4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 12px rgba(0, 192, 240, 0.15);
+    padding: 8px 12px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.netra-progress-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #0b1322 transparent transparent transparent;
+}
+
+.netra-progress-interactive:hover .netra-progress-tooltip,
+.netra-progress-interactive:focus .netra-progress-tooltip,
+.netra-progress-interactive:focus-visible .netra-progress-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.netra-tooltip__title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #f1f5f9;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 4px;
+    margin-bottom: 2px;
+}
+
+.netra-tooltip__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 10.5px;
+}
+
+.netra-tooltip__label {
+    color: #94a3b8;
+}
+
+.netra-tooltip__val {
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .netra-chart__tooltip,
+    .netra-progress-tooltip,
+    .netra-chart__point,
+    .netra-chart__donut-segment,
+    .netra-chart__bar {
+        transition: none !important;
+    }
+}
+
+@media print {
+    .netra-chart__tooltip,
+    .netra-progress-tooltip,
+    .netra-chart__point-hit,
+    .netra-chart__bar-hit {
+        display: none !important;
+    }
+}
+
 /* Compact tables inside dashboard panels. */
 .netra-table--compact th,
 .netra-table--compact td {

@@ -281,4 +281,159 @@ public class ChartRendererTests
         registry.Render(ChartKind.Donut, SingleSeriesModel()).ToString().Should().Contain("netra-chart--donut");
         registry.Render(ChartKind.Bar, SingleSeriesModel()).ToString().Should().Contain("netra-chart--bar");
     }
+
+    // ------------------------------------------------------------- tooltips & interactions
+
+    [Fact]
+    public void LineChart_RendersInteractiveTooltips_WithCategorySeriesAndValue()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "Crime Trend Analysis",
+            Description = "Monthly trend",
+            Categories = ["Jan 2026", "Feb 2026", "Mar 2026"],
+            Series = [new SvgChartSeries { Name = "Recorded cases", Values = [3m, 7m, 12m] }]
+        };
+
+        var svg = new SvgLineChartRenderer().Render(model).ToString();
+
+        // 1. Interactive group with accessibility attributes
+        svg.Should().Contain("class=\"netra-chart__interactive netra-chart__interactive--point\"");
+        svg.Should().Contain("tabindex=\"0\"");
+        svg.Should().Contain("role=\"graphics-symbol\"");
+        svg.Should().Contain("aria-label=\"Jan 2026, Recorded cases: 3\"");
+
+        // 2. Larger hover target hit circle
+        svg.Should().Contain("netra-chart__point-hit");
+        svg.Should().Contain("r=\"16\"");
+
+        // 3. Tooltip card structure
+        svg.Should().Contain("netra-chart__tooltip");
+        svg.Should().Contain("netra-chart__tooltip-bg");
+        svg.Should().Contain("netra-chart__tooltip-accent");
+        svg.Should().Contain(">Jan 2026</text>");
+        svg.Should().Contain(">Recorded cases: </tspan>");
+        svg.Should().Contain(">3</tspan>");
+
+        // 4. Zero JavaScript
+        svg.Should().NotContain("<script");
+        svg.Should().NotContain("javascript:");
+        svg.Should().NotContain("onclick");
+    }
+
+    [Fact]
+    public void DonutChart_RendersIndependentSliceTooltips_WithCountAndShare()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "Distribution by Type",
+            Description = "Crime distribution",
+            Categories = ["Fraud", "Assault", "Theft"],
+            Series = [new SvgChartSeries { Name = "Cases", Values = [6m, 4m, 3m] }] // Total: 13, Fraud share: 6/13 = 46.2%
+        };
+
+        var svg = new SvgDonutChartRenderer().Render(model).ToString();
+
+        // 1. Independent interactive slice groups
+        svg.Should().Contain("class=\"netra-chart__interactive netra-chart__interactive--donut\"");
+        svg.Should().Contain("tabindex=\"0\"");
+        svg.Should().Contain("role=\"graphics-symbol\"");
+
+        // 2. Calculated share percentage for Fraud (46.2%)
+        svg.Should().Contain(">Fraud</text>");
+        svg.Should().Contain(">Cases: </tspan><tspan class=\"netra-chart__tooltip-value\">6</tspan>");
+        svg.Should().Contain(">Share: </tspan><tspan class=\"netra-chart__tooltip-value\">46.2%</tspan>");
+
+        // 3. Center total and legend preserved
+        svg.Should().Contain(">13</text>");
+        svg.Should().Contain("TOTAL");
+        svg.Should().Contain("netra-chart__legend-swatch");
+    }
+
+    [Fact]
+    public void BarChart_RendersStackedSegmentTooltips_WithDistrictSeriesAndValue()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "District Comparison",
+            Description = "Risk by district",
+            Categories = ["Central District", "North District"],
+            Series =
+            [
+                new SvgChartSeries { Name = "Critical", Values = [4m, 1m] },
+                new SvgChartSeries { Name = "High", Values = [2m, 3m] }
+            ]
+        };
+
+        var svg = new SvgBarChartRenderer().Render(model).ToString();
+
+        // 1. Stacked segment interactive items
+        svg.Should().Contain("class=\"netra-chart__interactive netra-chart__interactive--bar\"");
+        svg.Should().Contain("tabindex=\"0\"");
+        svg.Should().Contain("role=\"graphics-symbol\"");
+        svg.Should().Contain("aria-label=\"Central District, Critical: 4\"");
+
+        // 2. Narrow segment hit area
+        svg.Should().Contain("netra-chart__bar-hit");
+
+        // 3. Tooltip content with district name, category, and exact count
+        svg.Should().Contain(">Central District</text>");
+        svg.Should().Contain("Risk category: Critical");
+        svg.Should().Contain("Count: 4");
+
+        // 4. Second segment on the same row has its own tooltip
+        svg.Should().Contain("aria-label=\"Central District, High: 2\"");
+        svg.Should().Contain("Risk category: High");
+        svg.Should().Contain("Count: 2");
+    }
+
+    [Fact]
+    public void CityComparisonBarChart_RendersTooltipsForCitiesAndYears()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "Metropolitan City Comparison (2021 vs 2023)",
+            Description = "Comparative volume",
+            Categories = ["Ahmedabad (2021)", "Ahmedabad (2023)", "Surat (2021)", "Surat (2023)"],
+            Series = [new SvgChartSeries { Name = "Cases Reported", Values = [447m, 246m, 296m, 397m] }]
+        };
+
+        var svg = new SvgBarChartRenderer().Render(model).ToString();
+
+        svg.Should().Contain(">Ahmedabad (2021)</text>");
+        svg.Should().Contain("Cases Reported");
+        svg.Should().Contain("Count: 447");
+
+        svg.Should().Contain(">Surat (2023)</text>");
+        svg.Should().Contain("Count: 397");
+    }
+
+    [Fact]
+    public void CybercrimeMotivesDonutChart_RendersTooltipsWithPercentages()
+    {
+        var model = new SvgChartModel
+        {
+            Title = "Reported Cybercrime Motives (Gujarat 2023)",
+            Description = "Motive breakdown",
+            Categories = ["Fraud", "Causing disrepute", "Extortion"],
+            Series = [new SvgChartSeries { Name = "Cases by Motive", Values = [1187m, 387m, 183m] }] // Total 1757
+        };
+
+        var svg = new SvgDonutChartRenderer().Render(model).ToString();
+
+        // 1187 / 1757 = 67.6%
+        svg.Should().Contain(">Fraud</text>");
+        svg.Should().Contain(">Cases: </tspan><tspan class=\"netra-chart__tooltip-value\">1187</tspan>");
+        svg.Should().Contain(">Share: </tspan><tspan class=\"netra-chart__tooltip-value\">67.6%</tspan>");
+
+        // 387 / 1757 = 22.0%
+        svg.Should().Contain(">Causing disrepute</text>");
+        svg.Should().Contain(">Cases: </tspan><tspan class=\"netra-chart__tooltip-value\">387</tspan>");
+        svg.Should().Contain(">Share: </tspan><tspan class=\"netra-chart__tooltip-value\">22.0%</tspan>");
+
+        // 183 / 1757 = 10.4%
+        svg.Should().Contain(">Extortion</text>");
+        svg.Should().Contain(">Cases: </tspan><tspan class=\"netra-chart__tooltip-value\">183</tspan>");
+        svg.Should().Contain(">Share: </tspan><tspan class=\"netra-chart__tooltip-value\">10.4%</tspan>");
+    }
 }

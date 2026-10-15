@@ -362,9 +362,33 @@
                             <span><strong>Gujarat Police Clearance:</strong> @stats.GujaratChargeSheetingRate%</span>
                             <span class="netra-muted">National Benchmark: @stats.NationalChargeSheetingRate%</span>
                         </div>
-                        <div style="height: 14px; background: rgba(255,255,255,0.06); border-radius: 7px; overflow: hidden; position: relative;">
-                            <div style="width: @stats.GujaratChargeSheetingRate%; height: 100%; background: linear-gradient(90deg, #00c0f0, #00e5a3); border-radius: 7px;"></div>
-                            <div style="position: absolute; left: @stats.NationalChargeSheetingRate%; top: 0; bottom: 0; width: 2px; background: #ffaa00;" title="National Average: @stats.NationalChargeSheetingRate%"></div>
+                        @{
+                            var gujRate = stats.GujaratChargeSheetingRate;
+                            var natRate = stats.NationalChargeSheetingRate;
+                            var rateDiff = gujRate - natRate;
+                            var rateDiffSign = rateDiff >= 0 ? "+" : string.Empty;
+                            var rateDiffFormatted = $"{rateDiffSign}{rateDiff.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}%";
+                        }
+                        <div class="netra-progress-interactive" tabindex="0" role="region" aria-label="Charge-sheeting rate comparison: Gujarat @(gujRate)%, National benchmark @(natRate)%, Difference @(rateDiffFormatted)">
+                            <div style="height: 14px; background: rgba(255,255,255,0.06); border-radius: 7px; overflow: hidden; position: relative;">
+                                <div style="width: @stats.GujaratChargeSheetingRate%; height: 100%; background: linear-gradient(90deg, #00c0f0, #00e5a3); border-radius: 7px;"></div>
+                                <div style="position: absolute; left: @stats.NationalChargeSheetingRate%; top: 0; bottom: 0; width: 2px; background: #ffaa00;" title="National Average: @stats.NationalChargeSheetingRate%"></div>
+                            </div>
+                            <div class="netra-progress-tooltip" role="tooltip" aria-hidden="true">
+                                <div class="netra-tooltip__title">Judicial Progress Rate</div>
+                                <div class="netra-tooltip__row">
+                                    <span class="netra-tooltip__label">Gujarat Police Clearance:</span>
+                                    <span class="netra-tooltip__val" style="color: #00e5a3;">@stats.GujaratChargeSheetingRate%</span>
+                                </div>
+                                <div class="netra-tooltip__row">
+                                    <span class="netra-tooltip__label">National Benchmark:</span>
+                                    <span class="netra-tooltip__val" style="color: #ffaa00;">@stats.NationalChargeSheetingRate%</span>
+                                </div>
+                                <div class="netra-tooltip__row">
+                                    <span class="netra-tooltip__label">Difference:</span>
+                                    <span class="netra-tooltip__val" style="color: var(--netra-primary);">@rateDiffFormatted (@(rateDiff >= 0 ? "Above" : "Below") National Benchmark)</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="netra-row netra-row--between" style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 6px; color: var(--netra-text-muted);">
                             <span>0%</span>

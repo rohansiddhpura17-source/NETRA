@@ -33,9 +33,10 @@ public sealed class SvgBarChartRenderer : IChartRenderer
 
         for (var categoryIndex = 0; categoryIndex < model.Categories.Count; categoryIndex++)
         {
+            var category = model.Categories[categoryIndex];
             var y = 34 + categoryIndex * 38;
             var x = left;
-            html.Append($"<text class=\"netra-chart__bar-label\" x=\"{F(left - 10)}\" y=\"{y + 12}\" text-anchor=\"end\">{E(model.Categories[categoryIndex])}</text>" +
+            html.Append($"<text class=\"netra-chart__bar-label\" x=\"{F(left - 10)}\" y=\"{y + 12}\" text-anchor=\"end\">{E(category)}</text>" +
                         $"<rect class=\"netra-chart__bar-track\" x=\"{F(left)}\" y=\"{y}\" width=\"{F(width)}\" height=\"16\" rx=\"2\"/>");
 
             for (var seriesIndex = 0; seriesIndex < model.Series.Count; seriesIndex++)
@@ -47,28 +48,47 @@ public sealed class SvgBarChartRenderer : IChartRenderer
                 {
                     continue;
                 }
-                var segId = $"{id}-cat-{categoryIndex}-ser-{seriesIndex}";
-                html.Append($"<rect class=\"netra-chart__bar netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{F(y)}\" width=\"{F(segmentWidth)}\" height=\"16\">" +
-                            $"<title>{E(model.Categories[categoryIndex])}, {E(series.Name)}: {F(value)}</title></rect>");
 
-                // invisible hit target for hover/focus (slightly taller for easier targeting)
-                html.Append($"<rect class=\"netra-chart__hit netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{F(y - 4)}\" width=\"{F(segmentWidth)}\" height=\"24\" rx=\"2\" tabindex=\"0\" aria-describedby=\"{segId}-tooltip\"/>");
+                var hitWidth = Math.Max(segmentWidth, 14m);
+                var hitX = x - (hitWidth - segmentWidth) / 2m;
+                if (hitX < left) hitX = left;
 
-                // tooltip positioned above the segment center
-                var ttx = x + segmentWidth / 2m;
-                var tty = y - 8m;
-                if (ttx < left + 8m) ttx = left + 8m;
-                if (ttx > left + width - 8m) ttx = left + width - 8m;
-                if (tty < 8m) tty = 8m;
-                if (tty > chartHeight - 8m) tty = chartHeight - 8m;
+                const decimal tw = 160;
+                const decimal th = 52;
+                var midX = x + segmentWidth / 2m;
+                var tx = midX - tw / 2m;
+                if (tx < 10m) tx = 10m;
+                if (tx + tw > 710m) tx = 710m - tw;
 
-                html.Append($"<g id=\"{segId}-tooltip\" class=\"netra-chart__tooltip netra-chart__series-{seriesIndex % 6}\" transform=\"translate({F(ttx)},{F(tty)})\" role=\"group\">" +
-                            $"<rect x=\"-8\" y=\"-22\" width=\"140\" height=\"44\" rx=\"6\" class=\"netra-tooltip__panel\"/>" +
-                            $"<rect x=\"-6\" y=\"-20\" width=\"6\" height=\"40\" rx=\"2\" class=\"netra-tooltip__accent netra-chart__series-{seriesIndex % 6}\"/>" +
-                            $"<text class=\"netra-tooltip__title\" x=\"8\" y=\"-6\">{E(model.Categories[categoryIndex])}</text>" +
-                            $"<text class=\"netra-tooltip__line\" x=\"8\" y=\"10\">Risk category: {E(series.Name)}</text>" +
-                            $"<text class=\"netra-tooltip__line\" x=\"8\" y=\"26\">Count: {F(value)}</text>" +
-                            $"</g>");
+                var ty = y - th - 6m;
+                if (ty < 6m)
+                {
+                    ty = y + 22m;
+                }
+                if (ty + th > chartHeight - 8m)
+                {
+                    ty = chartHeight - th - 8m;
+                }
+
+                var isRisk = series.Name is "Critical" or "High" or "Medium" or "Low"
+                    || model.Title.Contains("Risk", StringComparison.OrdinalIgnoreCase)
+                    || model.Title.Contains("Severity", StringComparison.OrdinalIgnoreCase)
+                    || model.Description.Contains("Risk", StringComparison.OrdinalIgnoreCase);
+
+                var seriesLabel = isRisk ? $"Risk category: {E(series.Name)}" : E(series.Name);
+
+                html.Append($"<g class=\"netra-chart__interactive netra-chart__interactive--bar\" tabindex=\"0\" role=\"graphics-symbol\" aria-label=\"{E(category)}, {E(series.Name)}: {F(value)}\">" +
+                            $"<rect class=\"netra-chart__bar-hit netra-chart__hit\" x=\"{F(hitX)}\" y=\"{F(y - 4)}\" width=\"{F(hitWidth)}\" height=\"24\"/>" +
+                            $"<rect class=\"netra-chart__bar netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{y}\" width=\"{F(segmentWidth)}\" height=\"16\">" +
+                            $"<title>{E(category)}, {E(series.Name)}: {F(value)}</title></rect>" +
+                            $"<g class=\"netra-chart__tooltip netra-chart__series-{seriesIndex % 6}\" aria-hidden=\"true\" pointer-events=\"none\">" +
+                            $"<rect class=\"netra-chart__tooltip-bg netra-tooltip__panel\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"{F(tw)}\" height=\"{F(th)}\" rx=\"4\"/>" +
+                            $"<rect class=\"netra-chart__tooltip-accent netra-tooltip__accent netra-chart__series-{seriesIndex % 6}\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"3\" height=\"{F(th)}\" rx=\"1\"/>" +
+                            $"<text class=\"netra-chart__tooltip-title netra-tooltip__title\" x=\"{F(tx + 10)}\" y=\"{F(ty + 16)}\">{E(category)}</text>" +
+                            $"<text class=\"netra-chart__tooltip-text netra-tooltip__line\" x=\"{F(tx + 10)}\" y=\"{F(ty + 30)}\">{seriesLabel}</text>" +
+                            $"<text class=\"netra-chart__tooltip-text netra-tooltip__line\" x=\"{F(tx + 10)}\" y=\"{F(ty + 44)}\">Count: {F(value)}</text>" +
+                            "</g></g>");
+
                 x += segmentWidth;
             }
 

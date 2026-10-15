@@ -39,43 +39,53 @@ public sealed class SvgDonutChartRenderer : IChartRenderer
                     $"<desc id=\"{id}-desc\">{E(model.Description)}</desc>" +
                     "<circle class=\"netra-chart__donut-track\" cx=\"130\" cy=\"126\" r=\"72\"/>");
 
-        const decimal cx = 130;
-        const decimal cy = 126;
-        const decimal r = 72;
         for (var i = 0; i < values.Length; i++)
         {
             var segment = circumference * values[i] / total;
-            var dash = F(segment);
-            var gap = F(circumference - segment);
-            var segClass = $"netra-chart__series-{i % 6}";
-            var segId = $"{id}-seg-{i}";
+            var percentage = values[i] / total * 100m;
+            var pctString = percentage.ToString("0.0", CultureInfo.InvariantCulture) + "%";
 
-            // visible segment (keeps original title)
-            html.Append($"<circle class=\"netra-chart__donut-segment {segClass}\" cx=\"{F(cx)}\" cy=\"{F(cy)}\" r=\"{F(r)}\" " +
-                        $"stroke-dasharray=\"{dash} {gap}\" stroke-dashoffset=\"-{F(offset)}\">" +
-                        $"<title>{E(categories[i])}: {F(values[i])}</title></circle>");
-
-            // larger invisible stroke to act as a hit target and keyboard focus
-            html.Append($"<circle class=\"netra-chart__hit {segClass}\" cx=\"{F(cx)}\" cy=\"{F(cy)}\" r=\"{F(r)}\" " +
-                        $"stroke-dasharray=\"{dash} {gap}\" stroke-dashoffset=\"-{F(offset)}\" stroke-width=\"24\" fill=\"none\" tabindex=\"0\" aria-describedby=\"{segId}-tooltip\"/>"
-            );
-
-            // calculate midpoint angle for tooltip placement
             var midOffset = offset + segment / 2m;
-            var angle = (double)(midOffset / circumference) * Math.PI * 2.0 - Math.PI / 2.0;
-            var tx = cx + (decimal)Math.Cos(angle) * (r + 22m);
-            var ty = cy + (decimal)Math.Sin(angle) * (r + 22m);
-            tx = Math.Max(8, Math.Min(512 - 8, tx));
-            ty = Math.Max(8, Math.Min(260 - 8, ty));
+            var frac = circumference > 0 ? (midOffset / circumference) : 0m;
 
-            // tooltip group
-            html.Append($"<g id=\"{segId}-tooltip\" class=\"netra-chart__tooltip {segClass}\" transform=\"translate({F(tx)},{F(ty)})\" role=\"group\">"
-                        + $"<rect x=\"8\" y=\"-22\" width=\"140\" height=\"48\" rx=\"6\" class=\"netra-tooltip__panel\"/>"
-                        + $"<rect x=\"10\" y=\"-20\" width=\"6\" height=\"44\" rx=\"2\" class=\"netra-tooltip__accent {segClass}\"/>"
-                        + $"<text class=\"netra-tooltip__title\" x=\"24\" y=\"-4\">{E(categories[i])}</text>"
-                        + $"<text class=\"netra-tooltip__line\" x=\"24\" y=\"14\">Cases: {F(values[i])}</text>"
-                        + $"<text class=\"netra-tooltip__line netra-tooltip__percent\" x=\"24\" y=\"30\">Share: {F(values[i] * 100m / total)}%</text>"
-                        + "</g>");
+            const decimal tw = 120;
+            const decimal th = 52;
+            decimal tx, ty;
+
+            if (frac < 0.25m)
+            {
+                tx = 135;
+                ty = 10;
+            }
+            else if (frac < 0.50m)
+            {
+                tx = 135;
+                ty = 198;
+            }
+            else if (frac < 0.75m)
+            {
+                tx = 10;
+                ty = 198;
+            }
+            else
+            {
+                tx = 10;
+                ty = 10;
+            }
+
+            html.Append($"<g class=\"netra-chart__interactive netra-chart__interactive--donut\" tabindex=\"0\" role=\"graphics-symbol\" aria-label=\"{E(categories[i])}: {F(values[i])} ({pctString})\">" +
+                        $"<circle class=\"netra-chart__donut-hit netra-chart__hit netra-chart__series-{i % 6}\" cx=\"130\" cy=\"126\" r=\"72\" " +
+                        $"stroke-dasharray=\"{F(segment)} {F(circumference - segment)}\" stroke-dashoffset=\"-{F(offset)}\" stroke-width=\"24\" fill=\"none\"/>" +
+                        $"<circle class=\"netra-chart__donut-segment netra-chart__series-{i % 6}\" cx=\"130\" cy=\"126\" r=\"72\" " +
+                        $"stroke-dasharray=\"{F(segment)} {F(circumference - segment)}\" stroke-dashoffset=\"-{F(offset)}\">" +
+                        $"<title>{E(categories[i])}: {F(values[i])} ({pctString})</title></circle>" +
+                        $"<g class=\"netra-chart__tooltip netra-chart__series-{i % 6}\" aria-hidden=\"true\" pointer-events=\"none\">" +
+                        $"<rect class=\"netra-chart__tooltip-bg netra-tooltip__panel\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"{F(tw)}\" height=\"{F(th)}\" rx=\"4\"/>" +
+                        $"<rect class=\"netra-chart__tooltip-accent netra-tooltip__accent netra-chart__series-{i % 6}\" x=\"{F(tx)}\" y=\"{F(ty)}\" width=\"3\" height=\"{F(th)}\" rx=\"1\"/>" +
+                        $"<text class=\"netra-chart__tooltip-title netra-tooltip__title\" x=\"{F(tx + 10)}\" y=\"{F(ty + 16)}\">{E(categories[i])}</text>" +
+                        $"<text class=\"netra-chart__tooltip-text netra-tooltip__line\" x=\"{F(tx + 10)}\" y=\"{F(ty + 30)}\"><tspan class=\"netra-chart__tooltip-label\">Cases: </tspan><tspan class=\"netra-chart__tooltip-value\">{F(values[i])}</tspan></text>" +
+                        $"<text class=\"netra-chart__tooltip-text netra-tooltip__line netra-tooltip__percent\" x=\"{F(tx + 10)}\" y=\"{F(ty + 44)}\"><tspan class=\"netra-chart__tooltip-label\">Share: </tspan><tspan class=\"netra-chart__tooltip-value\">{pctString}</tspan></text>" +
+                        "</g></g>");
 
             offset += segment;
         }
