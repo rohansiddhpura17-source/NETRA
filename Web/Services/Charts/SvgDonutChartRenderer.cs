@@ -39,12 +39,44 @@ public sealed class SvgDonutChartRenderer : IChartRenderer
                     $"<desc id=\"{id}-desc\">{E(model.Description)}</desc>" +
                     "<circle class=\"netra-chart__donut-track\" cx=\"130\" cy=\"126\" r=\"72\"/>");
 
+        const decimal cx = 130;
+        const decimal cy = 126;
+        const decimal r = 72;
         for (var i = 0; i < values.Length; i++)
         {
             var segment = circumference * values[i] / total;
-            html.Append($"<circle class=\"netra-chart__donut-segment netra-chart__series-{i % 6}\" cx=\"130\" cy=\"126\" r=\"72\" " +
-                        $"stroke-dasharray=\"{F(segment)} {F(circumference - segment)}\" stroke-dashoffset=\"-{F(offset)}\">" +
+            var dash = F(segment);
+            var gap = F(circumference - segment);
+            var segClass = $"netra-chart__series-{i % 6}";
+            var segId = $"{id}-seg-{i}";
+
+            // visible segment (keeps original title)
+            html.Append($"<circle class=\"netra-chart__donut-segment {segClass}\" cx=\"{F(cx)}\" cy=\"{F(cy)}\" r=\"{F(r)}\" " +
+                        $"stroke-dasharray=\"{dash} {gap}\" stroke-dashoffset=\"-{F(offset)}\">" +
                         $"<title>{E(categories[i])}: {F(values[i])}</title></circle>");
+
+            // larger invisible stroke to act as a hit target and keyboard focus
+            html.Append($"<circle class=\"netra-chart__hit {segClass}\" cx=\"{F(cx)}\" cy=\"{F(cy)}\" r=\"{F(r)}\" " +
+                        $"stroke-dasharray=\"{dash} {gap}\" stroke-dashoffset=\"-{F(offset)}\" stroke-width=\"24\" fill=\"none\" tabindex=\"0\" aria-describedby=\"{segId}-tooltip\"/>"
+            );
+
+            // calculate midpoint angle for tooltip placement
+            var midOffset = offset + segment / 2m;
+            var angle = (double)(midOffset / circumference) * Math.PI * 2.0 - Math.PI / 2.0;
+            var tx = cx + (decimal)Math.Cos(angle) * (r + 22m);
+            var ty = cy + (decimal)Math.Sin(angle) * (r + 22m);
+            tx = Math.Max(8, Math.Min(512 - 8, tx));
+            ty = Math.Max(8, Math.Min(260 - 8, ty));
+
+            // tooltip group
+            html.Append($"<g id=\"{segId}-tooltip\" class=\"netra-chart__tooltip {segClass}\" transform=\"translate({F(tx)},{F(ty)})\" role=\"group\">"
+                        + $"<rect x=\"8\" y=\"-22\" width=\"140\" height=\"48\" rx=\"6\" class=\"netra-tooltip__panel\"/>"
+                        + $"<rect x=\"10\" y=\"-20\" width=\"6\" height=\"44\" rx=\"2\" class=\"netra-tooltip__accent {segClass}\"/>"
+                        + $"<text class=\"netra-tooltip__title\" x=\"24\" y=\"-4\">{E(categories[i])}</text>"
+                        + $"<text class=\"netra-tooltip__line\" x=\"24\" y=\"14\">Cases: {F(values[i])}</text>"
+                        + $"<text class=\"netra-tooltip__line netra-tooltip__percent\" x=\"24\" y=\"30\">Share: {F(values[i] * 100m / total)}%</text>"
+                        + "</g>");
+
             offset += segment;
         }
 

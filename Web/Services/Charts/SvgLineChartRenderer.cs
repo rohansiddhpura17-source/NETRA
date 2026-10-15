@@ -57,9 +57,31 @@ public sealed class SvgLineChartRenderer : IChartRenderer
 
         for (var i = 0; i < points.Count; i++)
         {
-            html.Append($"<circle class=\"netra-chart__point\" cx=\"{F(points[i].X)}\" cy=\"{F(points[i].Y)}\" r=\"3.5\">" +
-                        $"<title>{E(categories[i])}: {F(values[i])}</title></circle>" +
-                        $"<text class=\"netra-chart__axis-label\" x=\"{F(points[i].X)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(categories[i])}</text>");
+            var px = points[i].X;
+            var py = points[i].Y;
+            var seriesName = model.Series.FirstOrDefault()?.Name ?? string.Empty;
+            var pointId = $"{id}-point-{i}";
+            var tooltipId = $"{pointId}-tooltip";
+
+            // clamp tooltip position within viewBox (0..720, 0..230)
+            var tx = Math.Max(6, Math.Min(714, px));
+            var ty = Math.Max(6, Math.Min(224, py - 14));
+
+            html.Append($"<g class=\"netra-chart__point-wrap\">"
+                        // visible point (keeps original title for basic UA tooltips)
+                        + $"<circle class=\"netra-chart__point\" cx=\"{F(px)}\" cy=\"{F(py)}\" r=\"3.5\" aria-hidden=\"true\"/>"
+                        // larger invisible hit target for hover and keyboard focus
+                        + $"<circle class=\"netra-chart__hit\" cx=\"{F(px)}\" cy=\"{F(py)}\" r=\"10\" tabindex=\"0\" aria-describedby=\"{tooltipId}\"/>"
+                        // server-rendered tooltip group (hidden by default; shown on hover/focus via CSS)
+                        + $"<g id=\"{tooltipId}\" class=\"netra-chart__tooltip netra-chart__series-0\" transform=\"translate({F(tx)},{F(ty)})\" role=\"group\">"
+                        + $"<rect x=\"8\" y=\"-22\" width=\"140\" height=\"44\" rx=\"6\" class=\"netra-tooltip__panel\"/>"
+                        + $"<rect x=\"10\" y=\"-20\" width=\"6\" height=\"40\" rx=\"2\" class=\"netra-tooltip__accent netra-chart__series-0\"/>"
+                        + $"<text class=\"netra-tooltip__title\" x=\"24\" y=\"-6\">{E(categories[i])}</text>"
+                        + $"<text class=\"netra-tooltip__line\" x=\"24\" y=\"10\">{E(seriesName)}: {F(values[i])}</text>"
+                        + "</g>"
+                        // keep axis label
+                        + $"<text class=\"netra-chart__axis-label\" x=\"{F(px)}\" y=\"{F(top + height + 24)}\" text-anchor=\"middle\">{E(categories[i])}</text>"
+                        + "</g>");
         }
 
         html.Append("</svg>");

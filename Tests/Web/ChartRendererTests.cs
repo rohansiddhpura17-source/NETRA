@@ -33,6 +33,9 @@ public class ChartRendererTests
         svg.Should().Contain("Mar");
         svg.Should().Contain("<path");
         svg.Should().Contain("<circle");
+        svg.Should().Contain("netra-chart__hit");
+        svg.Should().Contain("netra-chart__tooltip");
+        svg.Should().Contain("Cases: 1");
         svg.Should().NotContain("<script");
     }
 
@@ -138,6 +141,8 @@ public class ChartRendererTests
         svg.Should().Contain("netra-chart__legend-swatch");
         svg.Should().Contain("Jan");
         svg.Should().Contain("role=\"img\"");
+        svg.Should().Contain("netra-chart__hit");
+        svg.Should().Contain("Share:");
     }
 
     [Fact]
@@ -239,6 +244,9 @@ public class ChartRendererTests
         svg.Should().Contain("Critical");
         svg.Should().Contain(">4<"); // row total for Central
         svg.Should().Contain("netra-chart__bar-track");
+        svg.Should().Contain("netra-chart__hit");
+        svg.Should().Contain("Risk category: Critical");
+        svg.Should().Contain("Count: 1");
         svg.Should().NotContain("<script");
     }
 

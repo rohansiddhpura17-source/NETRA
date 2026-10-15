@@ -1698,6 +1698,60 @@ pre {
     stroke-linejoin: round;
 }
 
+/* Chart tooltip and hit target styles (SVG-only, no JavaScript) */
+.netra-chart__hit {
+    fill: transparent;
+    stroke: transparent;
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.netra-chart__tooltip {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease, transform 120ms ease;
+    transform: translateY(0);
+    isolation: isolate;
+}
+
+/* Show tooltip when the focused/hovered hit target is adjacent */
+.netra-chart__hit:hover + .netra-chart__tooltip,
+.netra-chart__hit:focus + .netra-chart__tooltip,
+.netra-chart__hit:focus-visible + .netra-chart__tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.netra-tooltip__panel {
+    fill: var(--netra-surface-elevated);
+    stroke: var(--netra-border-strong);
+    stroke-width: 1;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+}
+
+.netra-tooltip__accent {
+    fill: var(--netra-series);
+}
+
+.netra-tooltip__title {
+    fill: var(--netra-text-strong);
+    font-size: 11px;
+    font-weight: 700;
+}
+.netra-tooltip__line {
+    fill: var(--netra-text);
+    font-size: 11px;
+}
+.netra-tooltip__percent {
+    fill: var(--netra-text-faint);
+    font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .netra-chart__tooltip { transition: none; }
+}
+
 .netra-chart__point {
     fill: var(--netra-primary);
     stroke: var(--netra-background);

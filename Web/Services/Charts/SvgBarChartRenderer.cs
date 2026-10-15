@@ -47,9 +47,28 @@ public sealed class SvgBarChartRenderer : IChartRenderer
                 {
                     continue;
                 }
-
-                html.Append($"<rect class=\"netra-chart__bar netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{y}\" width=\"{F(segmentWidth)}\" height=\"16\">" +
+                var segId = $"{id}-cat-{categoryIndex}-ser-{seriesIndex}";
+                html.Append($"<rect class=\"netra-chart__bar netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{F(y)}\" width=\"{F(segmentWidth)}\" height=\"16\">" +
                             $"<title>{E(model.Categories[categoryIndex])}, {E(series.Name)}: {F(value)}</title></rect>");
+
+                // invisible hit target for hover/focus (slightly taller for easier targeting)
+                html.Append($"<rect class=\"netra-chart__hit netra-chart__series-{seriesIndex % 6}\" x=\"{F(x)}\" y=\"{F(y - 4)}\" width=\"{F(segmentWidth)}\" height=\"24\" rx=\"2\" tabindex=\"0\" aria-describedby=\"{segId}-tooltip\"/>");
+
+                // tooltip positioned above the segment center
+                var ttx = x + segmentWidth / 2m;
+                var tty = y - 8m;
+                if (ttx < left + 8m) ttx = left + 8m;
+                if (ttx > left + width - 8m) ttx = left + width - 8m;
+                if (tty < 8m) tty = 8m;
+                if (tty > chartHeight - 8m) tty = chartHeight - 8m;
+
+                html.Append($"<g id=\"{segId}-tooltip\" class=\"netra-chart__tooltip netra-chart__series-{seriesIndex % 6}\" transform=\"translate({F(ttx)},{F(tty)})\" role=\"group\">" +
+                            $"<rect x=\"-8\" y=\"-22\" width=\"140\" height=\"44\" rx=\"6\" class=\"netra-tooltip__panel\"/>" +
+                            $"<rect x=\"-6\" y=\"-20\" width=\"6\" height=\"40\" rx=\"2\" class=\"netra-tooltip__accent netra-chart__series-{seriesIndex % 6}\"/>" +
+                            $"<text class=\"netra-tooltip__title\" x=\"8\" y=\"-6\">{E(model.Categories[categoryIndex])}</text>" +
+                            $"<text class=\"netra-tooltip__line\" x=\"8\" y=\"10\">Risk category: {E(series.Name)}</text>" +
+                            $"<text class=\"netra-tooltip__line\" x=\"8\" y=\"26\">Count: {F(value)}</text>" +
+                            $"</g>");
                 x += segmentWidth;
             }
 

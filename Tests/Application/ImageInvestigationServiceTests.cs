@@ -325,7 +325,8 @@ public sealed class ImageInvestigationServiceTests : IDisposable
         var result = await UploadAsync("secure", bytes, "client name.png");
 
         var record = await _context.ImageRecords.SingleAsync();
-        record.StoragePath.Should().StartWith("IMG-001/");
+        // Normalize separators for platform-independent assertions
+        record.StoragePath.Replace('\\', '/').Should().StartWith("IMG-001/");
         record.StoragePath.Should().NotContain("client name");
         Path.GetFileName(record.StoragePath).Should().MatchRegex($"^[0-9a-f]{{32}}\\.png$");
         File.Exists(Path.Combine(_storageRoot, record.StoragePath)).Should().BeTrue();
